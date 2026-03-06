@@ -1,0 +1,51 @@
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -972,9 +972,14 @@ libunwind_riscv_la_LDFLAGS =                   \
+ 	$(COMMON_SO_LDFLAGS)                   \
+ 	-version-info $(SOVERSION)
+ libunwind_riscv_la_LIBADD =                    \
+-	libunwind-dwarf-generic.la             \
+-	libunwind-elf64.la                     \
+-	$(libunwind_libadd)
++	libunwind-dwarf-generic.la
++
++if USE_ELF32
++libunwind_riscv_la_LIBADD += libunwind-elf32.la
++else
++libunwind_riscv_la_LIBADD += libunwind-elf64.la
++endif
++libunwind_riscv_la_LIBADD += $(libunwind_libadd)
+ 
+ ### target s390x:
+ # The list of files that go both into libunwind and libunwind-s390x:
+--- a/configure.ac
++++ b/configure.ac
+@@ -370,7 +370,8 @@ AC_MSG_CHECKING([for ELF helper width])
+ AS_CASE([${target_arch}],
+         [arm|hppa|ppc32|x86|sh],           [use_elf32=yes; AC_MSG_RESULT([32])],
+         [aarch64|ia64|ppc64|x86_64|s390x], [use_elf64=yes; AC_MSG_RESULT([64])],
+-        [mips|riscv|loongarch64],          [use_elfxx=yes; AC_MSG_RESULT([xx])],
++        [mips|riscv|loongarch64],          [AS_IF([test x${target_cpu} = xriscv32], use_elf32=yes; AC_MSG_RESULT([32]),
++                                              use_elf64=yes; AC_MSG_RESULT([64]))],
+         [AC_MSG_ERROR([Unknown ELF target: ${target_arch}])]
+ )
+ AM_CONDITIONAL(USE_ELF32, [test x$use_elf32 = xyes])
+--- a/include/tdep-riscv/jmpbuf.h
++++ b/include/tdep-riscv/jmpbuf.h
+@@ -43,7 +43,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
+ #endif /* __riscv_float_abi_double */
+ 
+ #else
+-# error "Add offsets here"
++
++#if defined __riscv_float_abi_double
++# define JB_MASK_SAVED  (152>>2)
++# define JB_MASK        (156>>2)
++#else
++# define JB_MASK_SAVED  (56>>2)
++# define JB_MASK        (60>>2)
++#endif /* __riscv_float_abi_double */
++
+ #endif /* __riscv_xlen */
+ 
+ #endif

@@ -1,0 +1,138 @@
+From 91ec1d4cf069044caac1db33d960b12eba30fa81 Mon Sep 17 00:00:00 2001
+From: zhengweilong <zhengweilong@allwinnertech.com>
+Date: Fri, 27 Sep 2024 18:51:52 +0800
+Subject: [PATCH] swupdate:update awboot_handler for ota-burnkernel
+
+Signed-off-by: zhengweilong <zhengweilong@allwinnertech.com>
+---
+ handlers/Config.in        |  7 ++++
+ handlers/awboot_handler.c | 84 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 91 insertions(+)
+
+diff --git a/handlers/Config.in b/handlers/Config.in
+index 9d35008..9b674ad 100644
+--- a/handlers/Config.in
++++ b/handlers/Config.in
+@@ -231,6 +231,13 @@ config AWBOOT_HANDLER
+ 	  Handler using the libota-burnboot to update
+ 	  boot0/uboot for allwinner platform.
+ 
++config OTA_BURNKERNEL
++	bool "allwinner kernel"
++	default n
++	help
++	  Handler using the libota-burnkernel to update
++	  kernel for allwinner platform.
++
+ config SSBLSWITCH
+ 	bool "Second Stage Switcher"
+ 	depends on MTD
+diff --git a/handlers/awboot_handler.c b/handlers/awboot_handler.c
+index 47664c1..2a0b894 100644
+--- a/handlers/awboot_handler.c
++++ b/handlers/awboot_handler.c
+@@ -23,6 +23,10 @@
+ 
+ static void awuboot_handler(void);
+ static void awboot0_handler(void);
++#if defined(CONFIG_OTA_BURNKERNEL)
++static void awboot_handler(void);
++static void awboot_backup_handler(void);
++#endif
+ 
+ static int install_awboot0(struct img_type *img,
+ 	void __attribute__ ((__unused__)) *data)
+@@ -88,6 +92,72 @@ static int install_awuboot(struct img_type *img,
+ 	return ret;
+ }
+ 
++#if defined(CONFIG_OTA_BURNKERNEL)
++static int install_awboot(struct img_type *img,
++	void __attribute__ ((__unused__)) *data)
++{
++	int ret;
++	int fdout;
++	FILE *fp;
++	char *buf;
++	char filename[64];
++	struct stat statbuf;
++
++	if (snprintf(filename, sizeof(filename), "%s%s", get_tmpdirscripts(),
++		     img->fname) >= (int)sizeof(filename)) {
++		ERROR("Path too long: %s%s", get_tmpdirscripts(),
++			 img->fname);
++		return -1;
++	}
++
++	ret = stat(filename, &statbuf);
++	if (ret) {
++		fdout = openfileoutput(filename);
++		ret = copyimage(&fdout, img, NULL);
++		close(fdout);
++	}
++
++	ret = OTA_burnboot(filename);
++	if (ret) {
++		ERROR("OTA_burnboot fail, ret is %d\n", ret);
++	}
++
++	return ret;
++}
++
++static int install_awboot_backup(struct img_type *img,
++	void __attribute__ ((__unused__)) *data)
++{
++	int ret;
++	int fdout;
++	FILE *fp;
++	char *buf;
++	char filename[64];
++	struct stat statbuf;
++
++	if (snprintf(filename, sizeof(filename), "%s%s", get_tmpdirscripts(),
++		     img->fname) >= (int)sizeof(filename)) {
++		ERROR("Path too long: %s%s", get_tmpdirscripts(),
++			 img->fname);
++		return -1;
++	}
++
++	ret = stat(filename, &statbuf);
++	if (ret) {
++		fdout = openfileoutput(filename);
++		ret = copyimage(&fdout, img, NULL);
++		close(fdout);
++	}
++
++	ret = OTA_burnboot_backup(filename);
++	if (ret) {
++		ERROR("OTA_burnboot_backup fail, ret is %d\n", ret);
++	}
++
++	return ret;
++}
++#endif
++
+ __attribute__((constructor))
+ static void awuboot_handler(void)
+ {
+@@ -99,3 +169,17 @@ static void awboot0_handler(void)
+ {
+ 	register_handler("awboot0", install_awboot0, IMAGE_HANDLER, NULL);
+ }
++
++#if defined(CONFIG_OTA_BURNKERNEL)
++__attribute__((constructor))
++static void awboot_handler(void)
++{
++	register_handler("awboot", install_awboot, IMAGE_HANDLER, NULL);
++}
++
++__attribute__((constructor))
++static void awboot_backup_handler(void)
++{
++	register_handler("awboot_backup", install_awboot_backup, IMAGE_HANDLER, NULL);
++}
++#endif
+-- 
+2.7.4
+

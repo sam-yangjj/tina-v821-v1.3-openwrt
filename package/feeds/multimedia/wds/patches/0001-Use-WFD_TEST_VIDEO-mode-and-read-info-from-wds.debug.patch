@@ -1,0 +1,76 @@
+From 73c7f06120c7d5996f4851094be420cc3d59126a Mon Sep 17 00:00:00 2001
+From: liujialin <liujialin@allwinnertech.com>
+Date: Wed, 5 Jul 2023 17:02:40 +0800
+Subject: [PATCH] Use WFD_TEST_VIDEO mode and read info from wds.debug.
+
+Signed-off-by: liujialin <liujialin@allwinnertech.com>
+---
+ desktop_source/desktop_media_manager.cpp |  2 +-
+ mirac_network/mirac-gst-test-source.cpp  | 22 +++++++++++++++++++++-
+ 2 files changed, 22 insertions(+), 2 deletions(-)
+ mode change 100644 => 100755 mirac_network/mirac-gst-test-source.cpp
+
+diff --git a/desktop_source/desktop_media_manager.cpp b/desktop_source/desktop_media_manager.cpp
+index 6cd4852..53ebd4f 100644
+--- a/desktop_source/desktop_media_manager.cpp
++++ b/desktop_source/desktop_media_manager.cpp
+@@ -57,7 +57,7 @@ wds::SessionType DesktopMediaManager::GetSessionType() const {
+ void DesktopMediaManager::SetSinkRtpPorts(int port1, int port2) {
+   sink_port1_ = port1;
+   sink_port2_ = port2;
+-  gst_pipeline_.reset(new MiracGstTestSource(WFD_DESKTOP, hostname_, port1));
++  gst_pipeline_.reset(new MiracGstTestSource(WFD_TEST_VIDEO, hostname_, port1));
+   gst_pipeline_->SetState(GST_STATE_READY);
+ }
+ 
+diff --git a/mirac_network/mirac-gst-test-source.cpp b/mirac_network/mirac-gst-test-source.cpp
+old mode 100644
+new mode 100755
+index 12c2623..9c0c0a2
+--- a/mirac_network/mirac-gst-test-source.cpp
++++ b/mirac_network/mirac-gst-test-source.cpp
+@@ -22,6 +22,7 @@
+  */
+ 
+ #include <iostream>
++#include <fstream>
+ #include <gio/gio.h>
+ 
+ #include "mirac-gst-test-source.hpp"
+@@ -34,13 +35,32 @@ MiracGstTestSource::MiracGstTestSource (wfd_test_stream_t wfd_stream_type, std::
+ 
+     std::string hostname_port = (!hostname.empty() ? "host=" + hostname + " ": " ") + (port > 0 ? "port=" + std::to_string(port) : "");
+ 
++    std::ifstream file_debug("/tmp/wds.debug");
++
++	std::string resolution_info;
++	std::ifstream file_config("/etc/wds/wds.config");
++
+     if (wfd_stream_type == WFD_TEST_BOTH) {
+         gst_pipeline = "videotestsrc ! videoconvert ! video/x-raw,format=I420 ! x264enc ! muxer.  audiotestsrc ! avenc_ac3 ! muxer.  mpegtsmux name=muxer ! rtpmp2tpay ! udpsink name=sink " +
+             hostname_port;
+     } else if (wfd_stream_type == WFD_TEST_AUDIO) {
+         gst_pipeline = "audiotestsrc ! avenc_ac3 ! mpegtsmux ! rtpmp2tpay ! udpsink name=sink " + hostname_port;
+     } else if (wfd_stream_type == WFD_TEST_VIDEO) {
+-        gst_pipeline = "videotestsrc ! videoconvert ! video/x-raw,format=I420 ! x264enc ! mpegtsmux ! rtpmp2tpay ! udpsink name=sink " + hostname_port;
++        if (file_debug.good()) {
++            std::getline(file_debug, gst_pipeline);
++            gst_pipeline = gst_pipeline + " " + hostname_port;
++			file_debug.close();
++        } else {
++            // gst_pipeline = "videotestsrc pattern=ball ! videoconvert ! video/x-raw,format=I420 ! x264enc ! mpegtsmux ! rtpmp2tpay ! udpsink name=sink " + hostname_port;
++	        /* test mp4: video and audio*/
++			std::getline(file_config, resolution_info);
++	        gst_pipeline = "scrcastsrc ! video/x-raw," + resolution_info  + " ! omxh264videoenc ! h264parse ! queue ! mpegtsmux  name=mux ! rtpmp2tpay ! queue ! udpsink name=sink sync=false async=false " + hostname_port;
++	        file_config.close();
++			/* make a ts by gstreamer
++	        * gst-launch-1.0 videotestsrc pattern=ball ! videoconvert ! video/x-raw,format=I420 ! x264enc ! mpegtsmux ! filesink location = test.ts -e
++	        */
++            // gst_pipeline = " filesrc location = /mnt/sdcard/video/test.ts ! tsdemux ! mpegtsmux ! rtpmp2tpay ! udpsink name=sink " + hostname_port
++        }
+     } else if (wfd_stream_type == WFD_DESKTOP) {
+         gst_pipeline = "ximagesrc ! videoconvert ! video/x-raw,format=I420 ! x264enc tune=zerolatency ! mpegtsmux ! rtpmp2tpay ! udpsink name=sink " + hostname_port;
+     }
+-- 
+2.29.0
+

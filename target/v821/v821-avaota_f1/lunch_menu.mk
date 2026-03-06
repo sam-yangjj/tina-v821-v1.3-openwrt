@@ -1,0 +1,6 @@
+BOOT_MEDIUM:="SPI NOR"
+BOOT_TYPE:=NORMAL
+SUPPORT_BOOT_MEDIUM:="SPI_NOR/SPI NAND/SDNand/eMMC"
+HARDWARE_NAME:="Avaota F1/Avaota F1-B Development Board"
+NETWORK:=Integrated WIFI/BT
+APPLICATION:="Avaota F1/Avaota F1-B Development Board"

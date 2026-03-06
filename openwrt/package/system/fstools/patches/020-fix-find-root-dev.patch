@@ -1,0 +1,25 @@
+From 6db34937b6a08cda84bd8b8845b87944e17ec6e4 Mon Sep 17 00:00:00 2001
+From: liuchenyang <liuchenyang@allwinnertech.com>
+Date: Wed, 22 Mar 2023 11:18:16 +0800
+Subject: [PATCH 2/2] fix find root dev
+
+---
+ block.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/block.c b/block.c
+index 05bb9e4..c80b9b1 100644
+--- a/block.c
++++ b/block.c
+@@ -1417,7 +1417,7 @@ static int find_root_dev(char *buf, int len)
+ 	while ((e = readdir(d)) != NULL) {
+ 		snprintf(buf, len, "/dev/%s", e->d_name);
+ 
+-		if (stat(buf, &s) || s.st_rdev != root)
++		if (stat(buf, &s) || s.st_rdev != root || !S_ISBLK(s.st_mode))
+ 			continue;
+ 
+ 		closedir(d);
+-- 
+2.29.0
+

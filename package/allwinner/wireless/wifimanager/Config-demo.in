@@ -1,0 +1,41 @@
+choice
+	prompt "Wifimanager demo choice"
+	depends on (PACKAGE_wifimanager-v2.0 && PACKAGE_wifimanager-v2.0-demo) || COMPONENTS_WIFIMANAGER
+	default WMG_DEMO_TEST_TOOL
+config WMG_DEMO_TEST_TOOL
+	bool "DEMO_TEST_TOOL"
+config WMG_DEMO_STA
+	depends on WMG_SUPPORT_STA_MODE
+	bool "DEMO_STA"
+config WMG_DEMO_AP
+	depends on WMG_SUPPORT_AP_MODE
+	bool "DEMO_AP"
+config WMG_DEMO_MONITOR
+	depends on WMG_SUPPORT_MONITOR_MODE
+	bool "DEMO_MONITOR"
+config WMG_DEMO_P2P
+	depends on WMG_SUPPORT_P2P_MODE
+	bool "DEMO_P2P"
+config WMG_DEMO_STA_AP_COEXIST
+	depends on WMG_SUPPORT_STA_AP_MODE
+	bool "DEMO_STA_AP_COEXIST"
+config WMG_DEMO_NET_CONFIG
+	depends on WMG_PROTOCOL_BLE || WMG_PROTOCOL_SOFTAP
+	bool "DEMO_NET_CONFIG"
+config WMG_DEMO_FRAME
+	bool "DEMO_FRAME"
+endchoice
+
+config WMG_CMD_SOCKET_ACK
+	bool "wifi daemon log socket to wifi"
+	depends on (PACKAGE_wifimanager-v2.0 && PACKAGE_wifimanager-v2.0-demo && WMG_DEMO_TEST_TOOL)
+	default n
+		help
+			wifi daemon log socket to wifi
+
+config WMG_LOCK_MAC_ADDR
+	bool "Support lock mac addr(test use)"
+	depends on (PACKAGE_wifimanager-v2.0 || COMPONENTS_WIFIMANAGER)
+	default n
+		help
+			Support lock mac addr(test use).

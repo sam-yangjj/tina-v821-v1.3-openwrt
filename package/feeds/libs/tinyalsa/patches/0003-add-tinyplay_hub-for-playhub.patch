@@ -1,0 +1,376 @@
+diff --git a/utils/Makefile b/utils/Makefile
+index ad4bc5c..d9ebec4 100644
+--- a/utils/Makefile
++++ b/utils/Makefile
+@@ -14,10 +14,12 @@ CFLAGS += -O2
+ VPATH = ../src:../include/tinyalsa
+ 
+ .PHONY: all
+-all: -ltinyalsa tinyplay tinycap tinymix tinypcminfo
++all: -ltinyalsa tinyplay tinyplay_hub tinycap tinymix tinypcminfo
+ 
+ tinyplay: tinyplay.c pcm.h mixer.h asoundlib.h libtinyalsa.a
+ 
++tinyplay_hub: tinyplay_hub.c pcm.h mixer.h asoundlib.h libtinyalsa.a
++
+ tinycap: tinycap.c pcm.h mixer.h asoundlib.h libtinyalsa.a
+ 
+ tinymix: tinymix.c pcm.h mixer.h asoundlib.h libtinyalsa.a
+@@ -26,14 +28,15 @@ tinypcminfo: tinypcminfo.c pcm.h mixer.h asoundlib.h libtinyalsa.a
+ 
+ .PHONY: clean
+ clean:
+-	rm -f tinyplay tinycap
++	rm -f tinyplay tinyplay_hub tinycap
+ 	rm -f tinymix
+ 	rm -f tinypcminfo
+ 
+ .PHONY: install
+-install: tinyplay tinycap tinymix tinypcminfo
++install: tinyplay tinyplay_hub tinycap tinymix tinypcminfo
+ 	install -d $(DESTDIR)$(BINDIR)
+ 	install tinyplay $(DESTDIR)$(BINDIR)/
++	install tinyplay_hub $(DESTDIR)$(BINDIR)/
+ 	install tinycap $(DESTDIR)$(BINDIR)/
+ 	install tinymix $(DESTDIR)$(BINDIR)/
+ 	install tinypcminfo $(DESTDIR)$(BINDIR)/
+diff --git a/utils/tinyplay_hub.c b/utils/tinyplay_hub.c
+new file mode 100644
+index 0000000..f47de2b
+--- /dev/null
++++ b/utils/tinyplay_hub.c
+@@ -0,0 +1,334 @@
++/* tinyplay.c
++**
++** Copyright 2011, The Android Open Source Project
++**
++** Redistribution and use in source and binary forms, with or without
++** modification, are permitted provided that the following conditions are met:
++**     * Redistributions of source code must retain the above copyright
++**       notice, this list of conditions and the following disclaimer.
++**     * Redistributions in binary form must reproduce the above copyright
++**       notice, this list of conditions and the following disclaimer in the
++**       documentation and/or other materials provided with the distribution.
++**     * Neither the name of The Android Open Source Project nor the names of
++**       its contributors may be used to endorse or promote products derived
++**       from this software without specific prior written permission.
++**
++** THIS SOFTWARE IS PROVIDED BY The Android Open Source Project ``AS IS'' AND
++** ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++** ARE DISCLAIMED. IN NO EVENT SHALL The Android Open Source Project BE LIABLE
++** FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++** DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++** SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++** CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++** LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
++** OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
++** DAMAGE.
++*/
++
++#include <tinyalsa/asoundlib.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <stdint.h>
++#include <string.h>
++#include <signal.h>
++#include <endian.h>
++
++#define ID_RIFF 0x46464952
++#define ID_WAVE 0x45564157
++#define ID_FMT  0x20746d66
++#define ID_DATA 0x61746164
++
++struct riff_wave_header {
++    uint32_t riff_id;
++    uint32_t riff_sz;
++    uint32_t wave_id;
++};
++
++struct chunk_header {
++    uint32_t id;
++    uint32_t sz;
++};
++
++struct chunk_fmt {
++    uint16_t audio_format;
++    uint16_t num_channels;
++    uint32_t sample_rate;
++    uint32_t byte_rate;
++    uint16_t block_align;
++    uint16_t bits_per_sample;
++};
++
++struct play_hub {
++    unsigned int card;
++    unsigned int device;
++    unsigned int card_hub;
++    unsigned int device_hub;
++};
++
++static int close = 0;
++struct play_hub g_play_hub;
++
++void play_sample(FILE *file,
++                 unsigned int channels, unsigned int rate, unsigned int bits,
++                 unsigned int period_size, unsigned int period_count,
++                 uint32_t data_sz);
++
++void stream_close(int sig)
++{
++    /* allow the stream to be closed gracefully */
++    signal(sig, SIG_IGN);
++    close = 1;
++}
++
++int main(int argc, char **argv)
++{
++    FILE *file;
++    struct riff_wave_header riff_wave_header;
++    struct chunk_header chunk_header;
++    struct chunk_fmt chunk_fmt;
++    //unsigned int device = 0;
++    //unsigned int card = 0;
++    unsigned int period_size = 1024;
++    unsigned int period_count = 4;
++    char *filename;
++    int more_chunks = 1;
++
++    if (argc < 2) {
++        fprintf(stderr, "Usage: %s file.wav"
++                " [-D card] [-d device] [-HD card_hub] [-Hd device_hub]"
++                " [-p period_size] [-n n_periods] \n", argv[0]);
++        return 1;
++    }
++
++    filename = argv[1];
++    file = fopen(filename, "rb");
++    if (!file) {
++        fprintf(stderr, "Unable to open file '%s'\n", filename);
++        return 1;
++    }
++
++    if (fread(&riff_wave_header, sizeof(riff_wave_header), 1, file) != 1) {
++        fprintf(stderr, "Error: '%s' does not contain a data chunk\n", filename);
++        return -1;
++    }
++    if ((riff_wave_header.riff_id != ID_RIFF) ||
++        (riff_wave_header.wave_id != ID_WAVE)) {
++        fprintf(stderr, "Error: '%s' is not a riff/wave file\n", filename);
++        fclose(file);
++        return 1;
++    }
++
++    do {
++        if (fread(&chunk_header, sizeof(chunk_header), 1, file) != 1) {
++            fprintf(stderr, "Error: '%s' does not contain a data chunk\n", filename);
++            return -1;
++        }
++
++        switch (chunk_header.id) {
++        case ID_FMT:
++            if (fread(&chunk_fmt, sizeof(chunk_fmt), 1, file) != 1) {
++                fprintf(stderr, "Error: '%s' does not contain a data chunk\n", filename);
++                return -1;
++            }
++            /* If the format header is larger, skip the rest */
++            if (chunk_header.sz > sizeof(chunk_fmt))
++                fseek(file, chunk_header.sz - sizeof(chunk_fmt), SEEK_CUR);
++            break;
++        case ID_DATA:
++            /* Stop looking for chunks */
++            more_chunks = 0;
++            chunk_header.sz = le32toh(chunk_header.sz);
++            break;
++        default:
++            /* Unknown chunk, skip bytes */
++            fseek(file, chunk_header.sz, SEEK_CUR);
++        }
++    } while (more_chunks);
++
++    /* parse command line arguments */
++    argv += 2;
++    while (*argv) {
++        if (strcmp(*argv, "-D") == 0) {
++            argv++;
++            if (*argv)
++                g_play_hub.card = atoi(*argv);
++        }
++        if (strcmp(*argv, "-d") == 0) {
++            argv++;
++            if (*argv)
++                g_play_hub.device = atoi(*argv);
++        }
++        if (strcmp(*argv, "-HD") == 0) {
++            argv++;
++            if (*argv)
++                g_play_hub.card_hub = atoi(*argv);
++        }
++        if (strcmp(*argv, "-Hd") == 0) {
++            argv++;
++            if (*argv)
++                g_play_hub.device_hub = atoi(*argv);
++        }
++        if (strcmp(*argv, "-p") == 0) {
++            argv++;
++            if (*argv)
++                period_size = atoi(*argv);
++        }
++        if (strcmp(*argv, "-n") == 0) {
++            argv++;
++            if (*argv)
++                period_count = atoi(*argv);
++        }
++        if (*argv)
++            argv++;
++    }
++
++    play_sample(file,
++                chunk_fmt.num_channels, chunk_fmt.sample_rate, chunk_fmt.bits_per_sample,
++                period_size, period_count,
++                chunk_header.sz);
++
++    fclose(file);
++
++    return 0;
++}
++
++int check_param(struct pcm_params *params, unsigned int param, unsigned int value,
++                 char *param_name, char *param_unit)
++{
++    unsigned int min;
++    unsigned int max;
++    int is_within_bounds = 1;
++
++    min = pcm_params_get_min(params, param);
++    if (value < min) {
++        fprintf(stderr, "%s is %u%s, device only supports >= %u%s\n", param_name, value,
++                param_unit, min, param_unit);
++        is_within_bounds = 0;
++    }
++
++    max = pcm_params_get_max(params, param);
++    if (value > max) {
++        fprintf(stderr, "%s is %u%s, device only supports <= %u%s\n", param_name, value,
++                param_unit, max, param_unit);
++        is_within_bounds = 0;
++    }
++
++    return is_within_bounds;
++}
++
++int sample_is_playable(unsigned int card, unsigned int device, unsigned int channels,
++                        unsigned int rate, unsigned int bits, unsigned int period_size,
++                        unsigned int period_count)
++{
++    struct pcm_params *params;
++    int can_play;
++
++    params = pcm_params_get(card, device, PCM_OUT);
++    if (params == NULL) {
++        fprintf(stderr, "Unable to open PCM device %u.\n", device);
++        return 0;
++    }
++
++    can_play = check_param(params, PCM_PARAM_RATE, rate, "Sample rate", "Hz");
++    can_play &= check_param(params, PCM_PARAM_CHANNELS, channels, "Sample", " channels");
++    can_play &= check_param(params, PCM_PARAM_SAMPLE_BITS, bits, "Bitrate", " bits");
++    can_play &= check_param(params, PCM_PARAM_PERIOD_SIZE, period_size, "Period size", " frames");
++    can_play &= check_param(params, PCM_PARAM_PERIODS, period_count, "Period count", " periods");
++
++    pcm_params_free(params);
++
++    return can_play;
++}
++
++void play_sample(FILE *file,
++                 unsigned int channels, unsigned int rate, unsigned int bits,
++                 unsigned int period_size, unsigned int period_count,
++                 uint32_t data_sz)
++{
++    struct pcm_config config;
++    struct pcm *pcm, *pcm_hub;
++    char *buffer;
++    unsigned int size, read_sz;
++    int num_read;
++    unsigned int card = g_play_hub.card;
++    unsigned int device = g_play_hub.device;
++    unsigned int card_hub = g_play_hub.card_hub;
++    unsigned int device_hub = g_play_hub.device_hub;
++    int prepare_error;
++
++    memset(&config, 0, sizeof(config));
++    config.channels = channels;
++    config.rate = rate;
++    config.period_size = period_size;
++    config.period_count = period_count;
++    if (bits == 32)
++        config.format = PCM_FORMAT_S32_LE;
++    else if (bits == 24)
++        config.format = PCM_FORMAT_S24_3LE;
++    else if (bits == 16)
++        config.format = PCM_FORMAT_S16_LE;
++    config.start_threshold = 0;
++    config.stop_threshold = 0;
++    config.silence_threshold = 0;
++
++    if (!sample_is_playable(card, device, channels, rate, bits, period_size, period_count)) {
++        fprintf(stderr, "sample is play disable %u-%u\n", card, device);
++        return;
++    }
++    if (!sample_is_playable(card_hub, device_hub, channels, rate, bits, period_size, period_count)) {
++        fprintf(stderr, "sample is play disable %u-%u\n", card_hub, device_hub);
++        return;
++    }
++
++    pcm = pcm_open(card, device, PCM_OUT, &config);
++    if (!pcm || !pcm_is_ready(pcm)) {
++        fprintf(stderr, "Unable to open PCM device %u (%s)\n",
++                device, pcm_get_error(pcm));
++        return;
++    }
++    pcm_hub = pcm_open(card_hub, device_hub, PCM_OUT, &config);
++    if (!pcm_hub || !pcm_is_ready(pcm_hub)) {
++        fprintf(stderr, "Unable to open PCM device %u (%s)\n",
++                device_hub, pcm_get_error(pcm_hub));
++        return;
++    }
++
++    size = pcm_frames_to_bytes(pcm, pcm_get_buffer_size(pcm));
++    buffer = malloc(size);
++    if (!buffer) {
++        fprintf(stderr, "Unable to allocate %d bytes\n", size);
++        free(buffer);
++        pcm_close(pcm);
++        return;
++    }
++
++    printf("Playing sample: %u ch, %u hz, %u bit %u bytes\n", channels, rate, bits, data_sz);
++
++    /* catch ctrl-c to shutdown cleanly */
++    signal(SIGINT, stream_close);
++
++    /* open pcm_hub dapm route. */
++    prepare_error = pcm_prepare(pcm_hub);
++    if (prepare_error) {
++        fprintf(stderr, "pcm_hub pcm prepare failed\n");
++        return;
++    }
++
++    do {
++        read_sz = size < data_sz ? size : data_sz;
++        num_read = fread(buffer, 1, read_sz, file);
++        if (num_read > 0) {
++            if (pcm_writei(pcm, buffer, pcm_bytes_to_frames(pcm, num_read)) < 0) {
++                fprintf(stderr, "Error playing sample\n");
++                break;
++            }
++            data_sz -= num_read;
++        }
++    } while (!close && num_read > 0 && data_sz > 0);
++
++    free(buffer);
++    pcm_close(pcm);
++    pcm_close(pcm_hub);
++}
++

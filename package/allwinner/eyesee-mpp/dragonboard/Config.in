@@ -1,0 +1,8 @@
+if PACKAGE_eyesee-mpp-dragonboard
+
+config dragonboard_feature_startup
+	bool "run automatically at startup in tina"
+	default y
+	help
+	  run automatically at startup in tina.
+endif

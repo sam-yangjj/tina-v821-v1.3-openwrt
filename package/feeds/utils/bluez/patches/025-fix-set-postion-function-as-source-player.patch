@@ -1,0 +1,51 @@
+From fbe4c048a252b6aa162bf58821f6c6aceab409cf Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Tue, 14 Nov 2023 11:13:26 +0800
+Subject: [PATCH] fix set postion function as source player
+
+Signed-off-by: luoyuyi <luoyuyi@allwinnertech.com>
+---
+ profiles/audio/media.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+ mode change 100644 => 100755 profiles/audio/media.c
+
+diff --git a/profiles/audio/media.c b/profiles/audio/media.c
+old mode 100644
+new mode 100755
+index fea861e..8d54f6a
+--- a/profiles/audio/media.c
++++ b/profiles/audio/media.c
+@@ -1181,8 +1181,8 @@ static uint32_t get_position(void *user_data)
+ 	double timedelta;
+ 	uint32_t sec, msec;
+ 
+-	if (mp->status == NULL || strcasecmp(mp->status, "Playing") != 0)
+-		return mp->position;
++	// if (mp->status == NULL || strcasecmp(mp->status, "Playing") != 0)
++	// 	return mp->position;
+ 
+ 	timedelta = g_timer_elapsed(mp->timer, NULL);
+ 
+@@ -1391,7 +1391,7 @@ static gboolean set_position(struct media_player *mp, DBusMessageIter *iter)
+ 	}
+ 
+ 	/* Send a status change to force resync the position */
+-	avrcp_player_event(mp->player, AVRCP_EVENT_STATUS_CHANGED, status);
++	avrcp_player_event(mp->player, AVRCP_EVENT_TRACK_CHANGED  , status);
+ 
+ 	return TRUE;
+ }
+@@ -1561,8 +1561,8 @@ static gboolean parse_player_metadata(struct media_player *mp,
+ 		g_hash_table_insert(mp->track, g_strdup("Title"),
+ 								g_strdup(""));
+ 
+-	mp->position = 0;
+-	g_timer_start(mp->timer);
++	// mp->position = 0;
++	// g_timer_start(mp->timer);
+ 	uid = get_uid(mp);
+ 
+ 	avrcp_player_event(mp->player, AVRCP_EVENT_TRACK_CHANGED, &uid);
+-- 
+2.29.0
+

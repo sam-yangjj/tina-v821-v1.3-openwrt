@@ -1,0 +1,104 @@
+diff --git a/src/core/load-fragment.h b/src/core/load-fragment.h
+index ce10d03..d26713d 100644
+--- a/src/core/load-fragment.h
++++ b/src/core/load-fragment.h
+@@ -106,7 +106,7 @@ int config_parse_protect_system(const char* unit, const char *filename, unsigned
+ int config_parse_bus_name(const char* unit, const char *filename, unsigned line, const char *section, unsigned section_line, const char *lvalue, int ltype, const char *rvalue, void *data, void *userdata);
+ 
+ /* gperf prototypes */
+-const struct ConfigPerfItem* load_fragment_gperf_lookup(const char *key, unsigned length);
++const struct ConfigPerfItem* load_fragment_gperf_lookup(const char *key, size_t length);
+ extern const char load_fragment_gperf_nulstr[];
+ 
+ typedef enum Disabled {
+diff --git a/src/journal/journald-server.h b/src/journal/journald-server.h
+index c96877c..25e4bb6 100644
+--- a/src/journal/journald-server.h
++++ b/src/journal/journald-server.h
+@@ -154,7 +154,7 @@ void server_dispatch_message(Server *s, struct iovec *iovec, unsigned n, unsigne
+ void server_driver_message(Server *s, sd_id128_t message_id, const char *format, ...) _printf_(3,4);
+ 
+ /* gperf lookup function */
+-const struct ConfigPerfItem* journald_gperf_lookup(const char *key, unsigned length);
++const struct ConfigPerfItem* journald_gperf_lookup(const char *key, size_t length);
+ 
+ int config_parse_storage(const char *unit, const char *filename, unsigned line, const char *section, unsigned section_line, const char *lvalue, int ltype, const char *rvalue, void *data, void *userdata);
+ 
+diff --git a/src/shared/af-list.c b/src/shared/af-list.c
+index f396115..5948de2 100644
+--- a/src/shared/af-list.c
++++ b/src/shared/af-list.c
+@@ -25,7 +25,7 @@
+ #include "util.h"
+ #include "af-list.h"
+ 
+-static const struct af_name* lookup_af(register const char *str, register unsigned int len);
++static const struct af_name* lookup_af(register const char *str, register size_t len);
+ 
+ #include "af-to-name.h"
+ #include "af-from-name.h"
+diff --git a/src/shared/arphrd-list.c b/src/shared/arphrd-list.c
+index 6e113ef..f2ff795 100644
+--- a/src/shared/arphrd-list.c
++++ b/src/shared/arphrd-list.c
+@@ -26,7 +26,7 @@
+ #include "util.h"
+ #include "arphrd-list.h"
+ 
+-static const struct arphrd_name* lookup_arphrd(register const char *str, register unsigned int len);
++static const struct arphrd_name* lookup_arphrd(register const char *str, register size_t len);
+ 
+ #include "arphrd-to-name.h"
+ #include "arphrd-from-name.h"
+diff --git a/src/shared/cap-list.c b/src/shared/cap-list.c
+index 8033e8c..e98aea4 100644
+--- a/src/shared/cap-list.c
++++ b/src/shared/cap-list.c
+@@ -26,7 +26,7 @@
+ #include "cap-list.h"
+ #include "missing.h"
+ 
+-static const struct capability_name* lookup_capability(register const char *str, register unsigned int len);
++static const struct capability_name* lookup_capability(register const char *str, register size_t len);
+ 
+ #include "cap-to-name.h"
+ #include "cap-from-name.h"
+diff --git a/src/shared/errno-list.c b/src/shared/errno-list.c
+index c63296f..86b26c0 100644
+--- a/src/shared/errno-list.c
++++ b/src/shared/errno-list.c
+@@ -26,7 +26,7 @@
+ #include "errno-list.h"
+ 
+ static const struct errno_name* lookup_errno(register const char *str,
+-                                                 register unsigned int len);
++                                                 register size_t len);
+ 
+ #include "errno-to-name.h"
+ #include "errno-from-name.h"
+diff --git a/src/udev/net/link-config.h b/src/udev/net/link-config.h
+index cb434d1..e3b08cd 100644
+--- a/src/udev/net/link-config.h
++++ b/src/udev/net/link-config.h
+@@ -93,7 +93,7 @@ const char *mac_policy_to_string(MACPolicy p) _const_;
+ MACPolicy mac_policy_from_string(const char *p) _pure_;
+ 
+ /* gperf lookup function */
+-const struct ConfigPerfItem* link_config_gperf_lookup(const char *key, unsigned length);
++const struct ConfigPerfItem* link_config_gperf_lookup(const char *key, size_t length);
+ 
+ int config_parse_mac_policy(const char *unit, const char *filename, unsigned line, const char *section, unsigned section_line, const char *lvalue, int ltype, const char *rvalue, void *data, void *userdata);
+ int config_parse_name_policy(const char *unit, const char *filename, unsigned line, const char *section, unsigned section_line, const char *lvalue, int ltype, const char *rvalue, void *data, void *userdata);
+diff --git a/src/udev/udev-builtin-keyboard.c b/src/udev/udev-builtin-keyboard.c
+index d8ee4cb..488b10b 100644
+--- a/src/udev/udev-builtin-keyboard.c
++++ b/src/udev/udev-builtin-keyboard.c
+@@ -28,7 +28,7 @@
+ 
+ #include "udev.h"
+ 
+-static const struct key *keyboard_lookup_key(const char *str, unsigned len);
++static const struct key *keyboard_lookup_key(const char *str, size_t len);
+ #include "keyboard-keys-from-name.h"
+ #include "keyboard-keys-to-name.h"
+ 

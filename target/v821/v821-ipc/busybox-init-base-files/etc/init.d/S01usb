@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+# Load usb modules....
+#
+
+MODULES_DIR="/lib/modules/`uname -r`"
+
+start() {
+    printf "Load usb modules\n"
+
+    [ -f $MODULES_DIR/videobuf2-vmalloc.ko ] && insmod $MODULES_DIR/videobuf2-vmalloc.ko
+    [ -f $MODULES_DIR/usb_sunxi_f_uvc.ko ] && insmod $MODULES_DIR/usb_sunxi_f_uvc.ko
+    [ -f $MODULES_DIR/usb_sunxi_f_uac1.ko ] && insmod $MODULES_DIR/usb_sunxi_f_uac1.ko
+}
+
+stop() {
+    printf "Unload usb modules\n"
+
+    [ -f $MODULES_DIR/usb_sunxi_f_uvc.ko ] && rmmod $MODULES_DIR/usb_sunxi_f_uvc.ko
+    [ -f $MODULES_DIR/videobuf2-vmalloc.ko ] && rmmod $MODULES_DIR/videobuf2-vmalloc.ko
+    [ -f $MODULES_DIR/usb_sunxi_f_uac1.ko ] && rmmod $MODULES_DIR/usb_sunxi_f_uac1.ko
+}
+
+case "$1" in
+    start)
+	start
+	;;
+    stop)
+	stop
+	;;
+    restart|reload)
+	stop
+	start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?

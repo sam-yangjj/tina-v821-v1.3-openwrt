@@ -1,0 +1,15 @@
+menu "libdrm Configuration"
+	depends on PACKAGE_libdrm
+
+choice
+	prompt "libdrm build lib"
+	default LIBDRM_BUILD_BOTH
+config LIBDRM_DYNAMIC_ONLY
+	bool "only libdrm dynamic library"
+config LIBDRM_STATIC_ONLY
+	bool "only libdrm static library"
+config LIBDRM_BUILD_BOTH
+	bool "both"
+endchoice
+
+endmenu

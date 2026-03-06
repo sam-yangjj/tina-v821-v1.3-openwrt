@@ -1,0 +1,14 @@
+menuconfig TUYA_PACKAGE_BSP_CRYPTFS
+	bool "BSP cryptfs tools"
+	help
+	  tuya BSP cryptfs tools.
+
+if TUYA_PACKAGE_BSP_CRYPTFS
+
+config TUYA_PACKAGE_BSP_CRYPTFS_KEY
+	string "crypt key (32-bytes ASCII string)"
+	default ""
+	help
+	  Select which config to use.
+
+endif

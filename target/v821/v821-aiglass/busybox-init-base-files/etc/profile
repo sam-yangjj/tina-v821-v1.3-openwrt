@@ -1,0 +1,8 @@
+#!/bin/sh
+export PATH="/usr/sbin:/usr/bin:/sbin:/bin:/mnt/UDISK/data/usr/sbin:/mnt/UDISK/data/bin"
+export HOME=$(grep -e "^${USER:-root}:" /etc/passwd | cut -d ":" -f 6)
+export HOME=${HOME:-/root}
+export PS1='\u@\h:\w\$ '
+export LD_LIBRARY_PATH=/usr/lib/eyesee-mpp:/usr/lib/pdet:/mnt/UDISK/data/lib:/mnt/UDISK/lib:/mnt/UDISK/data/usr/lib${LD_LIBRARY_PATH}
+export TERM=xterm
+

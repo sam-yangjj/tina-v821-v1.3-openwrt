@@ -1,0 +1,74 @@
+From 81a71be06563cf40af2b476ca9826a9724ad7e9f Mon Sep 17 00:00:00 2001
+From: wuhuabin <wuhuabin@allwinnertech.com>
+Date: Mon, 26 Feb 2024 13:54:39 +0800
+Subject: [PATCH] support auto adapt emmc and ubi nand
+
+Signed-off-by: wuhuabin <wuhuabin@allwinnertech.com>
+---
+ tools/env/fw_env.c | 43 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
+
+diff --git a/tools/env/fw_env.c b/tools/env/fw_env.c
+index ed56d50..5188e05 100644
+--- a/tools/env/fw_env.c
++++ b/tools/env/fw_env.c
+@@ -128,6 +128,48 @@ static int have_redund_env;
+ #define UBI_SYSFS "/sys/class/ubi"
+ #define UBI_VOL_NAME_PATT "ubi%d_%d"
+ 
++#if UBOOT_ENV_TOOLS_AUTO_ADAPT_EMMC_NAND
++//#define env_dbg  fprintf
++#define env_dbg
++
++#define MAX_BUFF_SIZE  (1024)
++char env_name_buf[2][MAX_BUFF_SIZE];
++
++static int is_ubi_devname(const char *devname, unsigned int dev_id)
++{
++	env_dbg(stderr, "try %s link, dev_id:%u\n", devname, dev_id);
++	int ret;
++	ret = readlink(devname, env_name_buf[dev_id], MAX_BUFF_SIZE - 1);
++	if (ret == -1) {
++		fprintf(stderr, "%s is not a link, content in /etc/fw_env.config"
++				" should be like /dev/by-name/env\n", devname);
++		return 0;
++	}
++
++	env_dbg(stderr, "found link:%s, strlen(buf):%ld\n", env_name_buf[dev_id], strlen(env_name_buf[dev_id]));
++	if (strncmp(env_name_buf[dev_id], UBI_DEV_START, sizeof(UBI_DEV_START) - 1) == 0) {
++		env_dbg(stderr, "old DEVNAME(dev_id):%s, strlen(DEVNAME(dev_id)):%ld\n", DEVNAME(dev_id), strlen(DEVNAME(dev_id)));
++		DEVNAME(dev_id) = env_name_buf[dev_id];
++		env_dbg(stderr, "new DEVNAME(dev_id):%s\n", DEVNAME(dev_id));
++		return 1;// is ubi
++	} else{
++		return 0;// not ubi
++	}
++}
++
++static void ubi_check_dev(unsigned int dev_id)
++{
++	char *devname = (char *)DEVNAME(dev_id);
++	char *pname;
++	const char *volname = NULL;
++	const char *volume_devname;
++
++	if (!is_ubi_devname((DEVNAME(dev_id)), dev_id))
++		return;
++
++	IS_UBI(dev_id) = 1;
++}
++#else
+ static int is_ubi_devname(const char *devname)
+ {
+ 	return !strncmp(devname, UBI_DEV_START, sizeof(UBI_DEV_START) - 1);
+@@ -273,6 +315,7 @@ static void ubi_check_dev(unsigned int dev_id)
+ 		DEVNAME(dev_id) = volume_devname;
+ 	}
+ }
++#endif
+ 
+ static int ubi_update_start(int fd, int64_t bytes)
+ {
+-- 
+2.29.0
+

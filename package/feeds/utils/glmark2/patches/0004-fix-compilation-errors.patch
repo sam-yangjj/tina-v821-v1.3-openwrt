@@ -1,0 +1,84 @@
+From e4e12aca13be981e14df52051871d49d7b1c3397 Mon Sep 17 00:00:00 2001
+From: anruliu <anruliu@allwinnertech.com>
+Date: Thu, 19 Oct 2023 14:13:19 +0800
+Subject: [PATCH] fix compilation errors
+
+Signed-off-by: anruliu <anruliu@allwinnertech.com>
+---
+ src/gl-state-egl.cpp |  6 +++++-
+ src/wscript_build    | 10 +++++-----
+ 2 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/src/gl-state-egl.cpp b/src/gl-state-egl.cpp
+index 2a233aa..6bfad1d 100644
+--- a/src/gl-state-egl.cpp
++++ b/src/gl-state-egl.cpp
+@@ -1,5 +1,5 @@
+ //
+-// Copyright © 2012 Linaro Limited
++// Copyright ? 2012 Linaro Limited
+ //
+ // This file is part of the glmark2 OpenGL (ES) 2.0 benchmark.
+ //
+@@ -290,7 +290,11 @@ EglConfig::print() const
+ bool
+ GLStateEGL::init_display(void* native_display, GLVisualConfig& visual_config)
+ {
++#ifdef IMG_GPU
+     native_display_ = reinterpret_cast<EGLNativeDisplayType>(native_display);
++#else
++    native_display_ = static_cast<EGLNativeDisplayType>(reinterpret_cast<long>(native_display));
++#endif
+     requested_visual_config_ = visual_config;
+ 
+     return gotValidDisplay();
+diff --git a/src/wscript_build b/src/wscript_build
+index cf86971..a35d10f 100644
+--- a/src/wscript_build
++++ b/src/wscript_build
+@@ -5,7 +5,7 @@ common_sources = [f for f in all_sources if f.name.find('canvas-') == -1 and
+                                             f.name.find('gl-state-') == -1 and
+                                             f.name.find('main.cpp') == -1]
+ common_uselibs = ['libpng']
+-common_defines = ['USE_EXCEPTIONS']
++common_defines = []
+ 
+ libmatrix_sources = [f for f in bld.path.ant_glob('libmatrix/*.cc')
+                      if not f.name.endswith('test.cc')]
+@@ -73,7 +73,7 @@ if 'matrix-gl' in all_uselibs:
+         lib      = ['m'],
+         includes = ['.'],
+         export_includes = 'libmatrix',
+-        defines  = ['GLMARK2_USE_GL', 'USE_EXCEPTIONS']
++        defines  = ['GLMARK2_USE_GL']
+         )
+ 
+ if 'matrix-glesv2' in all_uselibs:
+@@ -84,7 +84,7 @@ if 'matrix-glesv2' in all_uselibs:
+         lib      = ['m'],
+         includes = ['.'],
+         export_includes = 'libmatrix',
+-        defines  = ['GLMARK2_USE_GLESv2', 'USE_EXCEPTIONS']
++        defines  = ['GLMARK2_USE_GLESv2']
+         )
+ 
+ if 'common-gl' in all_uselibs:
+@@ -95,7 +95,7 @@ if 'common-gl' in all_uselibs:
+         use      = common_uselibs + ['gl', 'matrix-gl'],
+         lib      = ['m', 'jpeg', 'dl'],
+         includes = includes,
+-        defines  = ['GLMARK2_USE_GL', 'USE_EXCEPTIONS']
++        defines  = ['GLMARK2_USE_GL']
+         )
+ 
+ if 'common-glesv2' in all_uselibs:
+@@ -106,5 +106,5 @@ if 'common-glesv2' in all_uselibs:
+         use      = common_uselibs + ['glesv2', 'matrix-glesv2'],
+         lib      = ['m', 'jpeg', 'dl'],
+         includes = includes,
+-        defines  = ['GLMARK2_USE_GLESv2', 'USE_EXCEPTIONS']
++        defines  = ['GLMARK2_USE_GLESv2']
+         )
+-- 
+2.29.0
+

@@ -1,0 +1,19 @@
+menu "tplayerdemo extra functions support"
+depends on PACKAGE_tplayerdemo
+
+comment "TIPS: please disable PACKAGE_powerkey if process suspend-test while playing multi-videos"
+	depends on PACKAGE_powerkey
+
+config TPLAYER_POWERKEY_MONITOR
+	depends on !PACKAGE_powerkey
+	default n
+	bool "Support scanning power key for suspend"
+	help
+		if suspend while playing multiple-videos, there's a chance that thread will be stuck by mutex-lock. You can scan the power key to control the players' states for avoiding mutex conflict.
+
+config TPLAYER_SUSPEND_TEST
+	default n
+	bool "tplayerdemo suspend test"
+	help
+		input "start suspend" to start the mode of testing suspend while playing multi videos. input "stop suspend" to end it.
+endmenu

@@ -1,0 +1,78 @@
+# CONFIG_USE_SSTRIP is not set
+CONFIG_TARGET_NAME="riscv32-linux-musl"
+CONFIG_TOOLCHAIN_PREFIX="riscv32-linux-musl-"
+CONFIG_TOOLCHAIN_GCC_VERSION="10.4.0"
+CONFIG_TOOLCHAIN_LIBC_VERSION="2.35"
+CONFIG_TOOLCHAIN_ROOT="$(LICHEE_TOP_DIR)/prebuilt/rootfsbuilt/riscv/nds32le-linux-musl-v5d/"
+# CONFIG_EXTERNAL_TOOLCHAIN_LIBC_USE_GLIBC is not set
+CONFIG_EXTERNAL_TOOLCHAIN_LIBC_USE_MUSL=y
+CONFIG_TOOLCHAIN_LIBC="musl"
+CONFIG_TOOLCHAIN_BIN_PATH="./sysroot/usr/bin"
+CONFIG_TOOLCHAIN_INC_PATH="./sysroot/usr/include"
+CONFIG_TOOLCHAIN_LIB_PATH="./sysroot/usr/lib"
+CONFIG_EXTRA_BINUTILS_CONFIG_OPTIONS=""
+CONFIG_EXTRA_GCC_CONFIG_OPTIONS=""
+CONFIG_USE_MUSL=y
+CONFIG_USE_EXTERNAL_LIBC=y
+CONFIG_BINUTILS_VERSION_2_40=y
+CONFIG_BINUTILS_VERSION="2.40"
+CONFIG_GCC_VERSION="12.2.0"
+CONFIG_LIBC="musl"
+CONFIG_TARGET_SUFFIX="musl"
+
+#
+# Configuration
+#
+CONFIG_LIBATOMIC_ROOT_DIR="$(LICHEE_TOP_DIR)/prebuilt/rootfsbuilt/riscv/nds32le-linux-musl-v5d/sysroot/"
+CONFIG_LIBATOMIC_FILE_SPEC="./lib32/ilp32d/libatomic.so.*"
+# end of Configuration
+
+CONFIG_PACKAGE_libc=y
+
+#
+# Configuration
+#
+CONFIG_LIBC_ROOT_DIR="$(LICHEE_TOP_DIR)/prebuilt/rootfsbuilt/riscv/nds32le-linux-musl-v5d/sysroot/"
+CONFIG_LIBC_FILE_SPEC="./lib/ld-musl-riscv32.so.* ./lib32/ilp32d/lib{anl,c,crypt,dl,m,nsl,nss_dns,nss_files,resolv,util}{-*.so,.so.*,.so}"
+CONFIG_LIBC_FILE_SPEC_USR="./usr/lib32/ilp32d/lib{anl,c,crypt,dl,m,nsl,nss_dns,nss_files,resolv,util}.so"
+CONFIG_LIBC_FILE_SOFTLINK_PATH="lib32/"
+CONFIG_LIBC_FILE_SOFTLINK_DIR="ilp32d"
+# end of Configuration
+
+CONFIG_PACKAGE_libgcc=y
+
+#
+# Configuration
+#
+CONFIG_LIBGCC_ROOT_DIR="$(LICHEE_TOP_DIR)/prebuilt/rootfsbuilt/riscv/nds32le-linux-musl-v5d/sysroot/"
+CONFIG_LIBGCC_FILE_SPEC="./lib32/ilp32d/libgcc_s.so.*"
+# end of Configuration
+
+# CONFIG_PACKAGE_libgomp is not set
+CONFIG_PACKAGE_libpthread=y
+
+#
+# Configuration
+#
+CONFIG_LIBPTHREAD_ROOT_DIR="$(LICHEE_TOP_DIR)/prebuilt/rootfsbuilt/riscv/nds32le-linux-musl-v5d/sysroot/"
+CONFIG_LIBPTHREAD_FILE_SPEC="./lib32/ilp32d/libpthread{-*.so,.so.*}"
+# end of Configuration
+
+CONFIG_PACKAGE_librt=y
+
+#
+# Configuration
+#
+CONFIG_LIBRT_ROOT_DIR="$(LICHEE_TOP_DIR)/prebuilt/rootfsbuilt/riscv/nds32le-linux-musl-v5d/sysroot/"
+CONFIG_LIBRT_FILE_SPEC="./lib32/ilp32d/librt{-*.so,.so.*}"
+# end of Configuration
+
+CONFIG_PACKAGE_libstdcpp=y
+
+#
+# Configuration
+#
+CONFIG_LIBSTDCPP_ROOT_DIR="$(LICHEE_TOP_DIR)/prebuilt/rootfsbuilt/riscv/nds32le-linux-musl-v5d/sysroot/"
+CONFIG_LIBSTDCPP_FILE_SPEC="./lib32/ilp32d/libstdc++.so.*"
+# end of Configuration
+

@@ -1,0 +1,13 @@
+config CHATBOX_VOLCENGITE_VISION
+	bool "Enable Doubao vision capabilities"
+	default n
+	depends on PACKAGE_chatbox_volcengite
+	help
+		Enable Doubao vision features
+
+config CHATBOX_VOLCENGITE_LOCAL_PREVIEW
+	bool "Enable Doubao local preview function"
+	default n
+	depends on CHATBOX_VOLCENGITE_VISION
+	help
+		Enable Video local preview

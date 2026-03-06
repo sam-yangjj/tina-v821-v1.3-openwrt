@@ -1,0 +1,35 @@
+menu "libunwind Configuration"
+	depends on PACKAGE_libunwind
+
+choice
+	prompt "libunwind build lib"
+	default LIBUNWIND_BUILD_BOTH
+config LIBUNWIND_DYNAMIC_ONLY
+	bool "only libunwind dynamic library"
+config LIBUNWIND_STATIC_ONLY
+	bool "only libunwind static library"
+config LIBUNWIND_BUILD_BOTH
+	bool "both"
+endchoice
+
+config LIBUNWIND_COREDUMP
+	bool "build libunwind-coredump library"
+	default n
+
+config LIBUNWIND_PTRACE
+	bool "build libunwind-ptrace library"
+	default n
+
+config LIBUNWIND_NTO
+	bool "build libunwind-nto library"
+	default n
+
+config LIBUNWIND_SETJMP
+	bool "build libunwind-setjmp library"
+	default n
+
+config LIBUNWIND_HANDLE_CPP_EXCEPTIONS
+	bool "use libunwind to handle C++ exceptions"
+	default n
+
+endmenu

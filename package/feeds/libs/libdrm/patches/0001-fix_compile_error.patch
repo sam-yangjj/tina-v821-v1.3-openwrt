@@ -1,0 +1,13 @@
+diff --git a/nouveau/private.h b/nouveau/private.h
+index 83060f9..850b3bf 100644
+--- a/nouveau/private.h
++++ b/nouveau/private.h
+@@ -10,7 +10,7 @@
+ #include "nouveau.h"
+ 
+ #ifdef DEBUG
+-drm_private uint32_t nouveau_debug;
++extern drm_private uint32_t nouveau_debug;
+ #define dbg_on(lvl) (nouveau_debug & (1 << lvl))
+ #define dbg(lvl, fmt, args...) do {                                            \
+ 	if (dbg_on((lvl)))                                                     \

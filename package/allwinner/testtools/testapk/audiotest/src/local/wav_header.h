@@ -1,0 +1,102 @@
+/*
+* Copyright (c) 2019-2025 Allwinner Technology Co., Ltd. ALL rights reserved.
+*
+* Allwinner is a trademark of Allwinner Technology Co.,Ltd., registered in
+* the the people's Republic of China and other countries.
+* All Allwinner Technology Co.,Ltd. trademarks are used with permission.
+*
+* DISCLAIMER
+* THIRD PARTY LICENCES MAY BE REQUIRED TO IMPLEMENT THE SOLUTION/PRODUCT.
+* IF YOU NEED TO INTEGRATE THIRD PARTY’S TECHNOLOGY (SONY, DTS, DOLBY, AVS OR MPEGLA, ETC.)
+* IN ALLWINNERS’SDK OR PRODUCTS, YOU SHALL BE SOLELY RESPONSIBLE TO OBTAIN
+* ALL APPROPRIATELY REQUIRED THIRD PARTY LICENCES.
+* ALLWINNER SHALL HAVE NO WARRANTY, INDEMNITY OR OTHER OBLIGATIONS WITH RESPECT TO MATTERS
+* COVERED UNDER ANY REQUIRED THIRD PARTY LICENSE.
+* YOU ARE SOLELY RESPONSIBLE FOR YOUR USAGE OF THIRD PARTY’S TECHNOLOGY.
+*
+*
+* THIS SOFTWARE IS PROVIDED BY ALLWINNER"AS IS" AND TO THE MAXIMUM EXTENT
+* PERMITTED BY LAW, ALLWINNER EXPRESSLY DISCLAIMS ALL WARRANTIES OF ANY KIND,
+* WHETHER EXPRESS, IMPLIED OR STATUTORY, INCLUDING WITHOUT LIMITATION REGARDING
+* THE TITLE, NON-INFRINGEMENT, ACCURACY, CONDITION, COMPLETENESS, PERFORMANCE
+* OR MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+* IN NO EVENT SHALL ALLWINNER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+* NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+* LOSS OF USE, DATA, OR PROFITS, OR BUSINESS INTERRUPTION)
+* HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+* STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+* OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+#ifndef __AUDIOTEST_WAV_HEADER_H__
+#define __AUDIOTEST_WAV_HEADER_H__
+
+#include <stdint.h>
+#include <stdio.h>
+
+/* size of the header of a PCM wave file */
+#define AUDIOTEST_WAV_PCM_HEADER_SIZE 44
+
+/* header of a PCM wave file */
+struct audiotest_wav_pcm_header {
+    char riff_id[4];
+    uint32_t riff_size;
+    char riff_format[4];
+    char fmt_id[4];
+    uint32_t fmt_size;
+    uint16_t audio_format;
+    uint16_t n_channels;
+    uint32_t sample_rate;
+    uint32_t byte_rate;
+    uint16_t block_align;
+    uint16_t bits_per_sample;
+    char data_id[4];
+    uint32_t data_size;
+};
+
+
+/**
+ * audiotest_wav_pcm_header_read() - read header of a PCM wave file
+ * @param header:   (out) A pointer to the structure of PCM wave header.
+ * @param fp:       (in&out) A FILE pointer to the the wave file (not
+ *                      necessarily need to be the begining of the wave file).
+ *                      "fp" will update to the position after the end of PCM
+ *                      wave header after running this function.
+ * @return: 0 on success, nonzero on error
+ */
+int audiotest_wav_pcm_header_read(struct audiotest_wav_pcm_header *header,
+                                  FILE *fp);
+
+/**
+ * audiotest_wav_pcm_header_write() - write header to a PCM wave file
+ * @param n_channels:   Number of channels of the PCM wave file
+ * @param sample_rate:  Sampling rate of the PCM wave file (blocks per second)
+ * @param bits_per_sample:  Number of bits that one sample has
+ * @param block_align:  Numeber of bytes for one sample including all channels
+ * @param frames:   Number of frames that the PCM wave file has
+ *                      (size of 1 frame = bits_per_sample / 8 * n_channels)
+ * @param fp:       (in&out) A FILE pointer to the wave file (not
+ *                      necessarily need to be the begining of the wave file).
+ *                      "fp" will update to the position after the end of PCM
+ *                      wave header after running this function.
+ *
+ * This function will overwrite several bytes of data (determined by the size
+ * of PCM wave header) in the beginning of the PCM wave file.
+ *
+ * @return: 0 on success, nonzero on error
+ */
+int audiotest_wav_pcm_header_write(uint16_t n_channels, uint32_t sample_rate,
+                                   uint16_t bits_per_sample, uint16_t block_align,
+                                   uint32_t frames, FILE *fp);
+
+/**
+ * audiotest_wav_pcm_header_print() - print the header of the PCM wave file
+ * @param header:    (in) A pointer to the structure of PCM wave header.
+ *
+ * @return: void
+ */
+void audiotest_wav_pcm_header_print(
+        const struct audiotest_wav_pcm_header *header);
+
+#endif /* ifndef __AUDIOTEST_WAV_HEADER_H__ */

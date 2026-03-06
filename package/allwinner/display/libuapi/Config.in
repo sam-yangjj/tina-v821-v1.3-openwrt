@@ -1,0 +1,67 @@
+config PACKAGE_libuapi_config
+	bool "libuapi config"
+	default n
+	select PACKAGE_libuapi
+	help
+	  move config out of PACKAGE_libuapi to solve recursive dependency.
+
+if PACKAGE_libuapi_config
+
+choice
+prompt "Choose display framework"
+	default SUNXI_DISPLAY_TWO
+	help
+	Select the preferred minigui running mode.
+config SUNXI_DISPLAY_ONE
+	bool "sunxi_display1"
+config SUNXI_DISPLAY_TWO
+	bool "sunxi_display2"
+config SUNXI_DRM
+	bool "sunxi_drm"
+config SUNXI_DRMCOMPOSITOR
+	bool "sunxi_drmcompositor"
+endchoice
+choice
+prompt "Choose transmit display buffer method"
+	default SUNXI_TRANS_DISPBUF_FD
+	help
+	Select how to transmit display buffer to display driver.
+config SUNXI_TRANS_DISPBUF_FD
+	bool "sunxi_trans_dispbuf_fd"
+config SUNXI_TRANS_DISPBUF_PHYADDR
+	bool "sunxi_trans_dispbuf_phyaddr"
+endchoice
+choice
+prompt "Choose layer alloc method"
+	default LUAPI_LAYER_ALLOC_CHN
+	help
+	Select how to apply for layer.
+config LUAPI_LAYER_ALLOC_CHN
+	bool "luapi_layer_alloc_chn"
+config LUAPI_LAYER_ALLOC_LAY
+	bool "luapi_layer_alloc_lay"
+endchoice
+choice
+prompt "Choose display rendering mode"
+	default SUNXI_DISPLAY_DE
+	help
+		Choose display rendering mode, DE or GPU.
+config SUNXI_DISPLAY_DE
+	bool "DE"
+config SUNXI_DISPLAY_GPU
+	bool "GPU"
+	help
+	Define the macro SUNXI_DISPLAY_GPU, use GPU rendering, send the RGBA data
+	after rendering to fb1 display, execute export FRAMEBUFFER=/dev/fb1
+	before executing the program, no longer support DispSetEnable, DispSetSrcRect,
+	DispSetZorder and DispSetIoctl functions.
+
+	Define the macro SUNXI_DISPLAY_GPU and SUNXI_DISPLAY_GPU_BUF, use GPU rendering,
+	send the RGBA data after rendering to layer. No longer support DispSetSrcRect functions.
+	Default use.
+endchoice
+
+config SUPPORT_CONFIG_FILE
+	bool "support config file"
+
+endif

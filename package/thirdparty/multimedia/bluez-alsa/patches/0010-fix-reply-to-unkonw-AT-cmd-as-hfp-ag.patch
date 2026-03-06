@@ -1,0 +1,73 @@
+From 33f0e137d374f79d7930e4c06a8db32d1331ac34 Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Tue, 14 May 2024 16:12:59 +0800
+Subject: [PATCH] fix reply to unkonw AT cmd as hfp-ag
+
+---
+ src/ba-rfcomm.c | 29 ++++++++++++++++++++++++++++-
+ 1 file changed, 28 insertions(+), 1 deletion(-)
+
+diff --git a/src/ba-rfcomm.c b/src/ba-rfcomm.c
+index 9da2db1..991196f 100644
+--- a/src/ba-rfcomm.c
++++ b/src/ba-rfcomm.c
+@@ -254,6 +254,27 @@ static int rfcomm_handler_cmer_set_cb(struct ba_rfcomm *r, const struct bt_at *a
+ 	return 0;
+ }
+ 
++static int rfcomm_handler_ccwa_set_cb(struct ba_rfcomm *r, const struct bt_at *at) {
++
++	const int fd = r->fd;
++	int flag = atoi(at->value);
++	warn("remote device send ccwa:%d", flag);
++
++	if (rfcomm_write_at(fd, AT_TYPE_RESP, NULL, "ERROR") == -1)
++		return -1;
++	return 0;
++}
++
++static int rfcomm_handler_clip_set_cb(struct ba_rfcomm *r, const struct bt_at *at) {
++
++	const int fd = r->fd;
++	int flag = atoi(at->value);
++	warn("remote device send clip:%d", flag);
++	if (rfcomm_write_at(fd, AT_TYPE_RESP, NULL, "ERROR") == -1)
++		return -1;
++	return 0;
++}
++
+ /**
+  * RESP: Standard indicator events reporting unsolicited result code */
+ static int rfcomm_handler_ciev_resp_cb(struct ba_rfcomm *r, const struct bt_at *at) {
+@@ -742,6 +763,10 @@ static const struct ba_rfcomm_handler rfcomm_handler_cind_resp_get = {
+ 	AT_TYPE_RESP, "+CIND", rfcomm_handler_cind_resp_get_cb };
+ static const struct ba_rfcomm_handler rfcomm_handler_cmer_set = {
+ 	AT_TYPE_CMD_SET, "+CMER", rfcomm_handler_cmer_set_cb };
++static const struct ba_rfcomm_handler rfcomm_handler_ccwa_set = {
++	AT_TYPE_CMD_SET, "+CCWA", rfcomm_handler_ccwa_set_cb };
++static const struct ba_rfcomm_handler rfcomm_handler_clip_set = {
++	AT_TYPE_CMD_SET, "+CLIP", rfcomm_handler_clip_set_cb };
+ static const struct ba_rfcomm_handler rfcomm_handler_ciev_resp = {
+ 	AT_TYPE_RESP, "+CIEV", rfcomm_handler_ciev_resp_cb };
+ static const struct ba_rfcomm_handler rfcomm_handler_bia_set = {
+@@ -788,6 +813,8 @@ static ba_rfcomm_callback *rfcomm_get_callback(const struct bt_at *at) {
+ 		&rfcomm_handler_cind_test,
+ 		&rfcomm_handler_cind_get,
+ 		&rfcomm_handler_cmer_set,
++		&rfcomm_handler_ccwa_set,
++		&rfcomm_handler_clip_set,
+ 		&rfcomm_handler_ciev_resp,
+ 		&rfcomm_handler_bia_set,
+ 		&rfcomm_handler_brsf_set,
+@@ -1291,7 +1318,7 @@ read:
+ 				if (callback(r, &reader.at) == -1)
+ 					goto ioerror;
+ 			}
+-			else if (pfds[2].fd == -1) {
++			else {
+ 				warn("Unsupported AT message: %s: command:%s, value:%s",
+ 						at_type2str(reader.at.type), reader.at.command, reader.at.value);
+ 				if (reader.at.type != AT_TYPE_RESP)
+-- 
+2.29.0
+

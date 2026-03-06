@@ -1,0 +1,15 @@
+config PARALLEL_INSMOD_EARLY_MODS
+    string "early install kernel module"
+    depends on PACKAGE_parallel_insmod
+    help
+      if Y it will generate mods.early.deps
+      file to record module dependences.
+      spill with space.
+      e.g. g2d_sunxi aic8800_fdrv
+
+config NUMBER_THREADS
+    int "number of thread to insmod"
+    default 4
+    depends on PACKAGE_parallel_insmod
+    help
+      number of thread to insmod

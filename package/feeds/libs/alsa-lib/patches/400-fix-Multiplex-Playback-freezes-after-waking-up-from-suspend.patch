@@ -1,0 +1,14 @@
+Index: alsa-lib-1.1.8/src/pcm/pcm_direct.c
+===================================================================
+--- alsa-lib-1.1.8.orig/src/pcm/pcm_direct.c
++++ alsa-lib-1.1.8/src/pcm/pcm_direct.c
+@@ -1036,7 +1036,8 @@ int snd_pcm_direct_prepare(snd_pcm_t *pc
+ 	int err;
+ 
+ 	switch (snd_pcm_state(dmix->spcm)) {
+-	case SND_PCM_STATE_SETUP:
++	/* fix bug 200254, Multiplex Playback freezes after waking up from suspend. */
++	/* case SND_PCM_STATE_SETUP: */
+ 	case SND_PCM_STATE_XRUN:
+ 	case SND_PCM_STATE_SUSPENDED:
+ 		err = snd_pcm_prepare(dmix->spcm);

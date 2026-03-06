@@ -1,0 +1,12 @@
+diff --git a/configure b/configure
+index f11e73a..7dded36 100755
+--- a/configure
++++ b/configure
+@@ -16527,6 +16527,7 @@ ac_fn_c_check_decl "$LINENO" "renameat2" "ac_cv_have_decl_renameat2" "
+ #include <linux/random.h>
+ 
+ "
++ac_cv_have_decl_renameat2=yes
+ if test "x$ac_cv_have_decl_renameat2" = xyes; then :
+   ac_have_decl=1
+ else

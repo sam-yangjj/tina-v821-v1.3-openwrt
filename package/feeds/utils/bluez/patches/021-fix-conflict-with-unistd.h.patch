@@ -1,0 +1,64 @@
+From 0c8f05238c012ccc55b2ffa9db365d9059640e85 Mon Sep 17 00:00:00 2001
+From: liuchenyang <liuchenyang@allwinnertech.com>
+Date: Wed, 22 Mar 2023 13:41:25 +0800
+Subject: [PATCH] fix conflict with unistd.h
+
+---
+ obexd/client/sync.c    | 6 +++---
+ profiles/audio/media.c | 4 ++--
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/obexd/client/sync.c b/obexd/client/sync.c
+index 548c318..44a6736 100644
+--- a/obexd/client/sync.c
++++ b/obexd/client/sync.c
+@@ -222,7 +222,7 @@ static void sync_remove(struct obc_session *session)
+ 	g_dbus_unregister_interface(conn, path, SYNC_INTERFACE);
+ }
+ 
+-static struct obc_driver sync = {
++static struct obc_driver sync2 = {
+ 	.service = "SYNC",
+ 	.uuid = SYNC_UUID,
+ 	.target = OBEX_SYNC_UUID,
+@@ -241,7 +241,7 @@ int sync_init(void)
+ 	if (!conn)
+ 		return -EIO;
+ 
+-	err = obc_driver_register(&sync);
++	err = obc_driver_register(&sync2);
+ 	if (err < 0) {
+ 		dbus_connection_unref(conn);
+ 		conn = NULL;
+@@ -258,5 +258,5 @@ void sync_exit(void)
+ 	dbus_connection_unref(conn);
+ 	conn = NULL;
+ 
+-	obc_driver_unregister(&sync);
++	obc_driver_unregister(&sync2);
+ }
+diff --git a/profiles/audio/media.c b/profiles/audio/media.c
+index 993ecb3..fea861e 100644
+--- a/profiles/audio/media.c
++++ b/profiles/audio/media.c
+@@ -1265,7 +1265,7 @@ static bool stop(void *user_data)
+ 	return media_player_send(mp, "Stop");
+ }
+ 
+-static bool pause(void *user_data)
++static bool pause_play(void *user_data)
+ {
+ 	struct media_player *mp = user_data;
+ 
+@@ -1315,7 +1315,7 @@ static struct avrcp_player_cb player_cb = {
+ 	.set_volume = set_volume,
+ 	.play = play,
+ 	.stop = stop,
+-	.pause = pause,
++	.pause = pause_play,
+ 	.next = next,
+ 	.previous = previous,
+ };
+-- 
+2.29.0
+

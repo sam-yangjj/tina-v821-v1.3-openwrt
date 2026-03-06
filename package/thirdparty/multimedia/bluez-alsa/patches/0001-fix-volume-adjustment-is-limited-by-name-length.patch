@@ -1,0 +1,25 @@
+From f4b6172131cb853a0f7a25008d13f35f74e05ce3 Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Tue, 26 Jul 2022 18:42:42 +0800
+Subject: [PATCH] fix-volume-adjustment-is-limited-by-name-length
+
+---
+ src/asound/bluealsa-ctl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/asound/bluealsa-ctl.c b/src/asound/bluealsa-ctl.c
+index 6cffd66..9af7b18 100644
+--- a/src/asound/bluealsa-ctl.c
++++ b/src/asound/bluealsa-ctl.c
+@@ -289,7 +289,7 @@ static void bluealsa_elem_set_name(struct ctl_elem *elem, const char *name, int
+ 	if (name != NULL) {
+ 		/* multi-device mixer - include device alias in control names */
+ 
+-		const int name_len = strlen(name);
++		const int name_len = (strlen(name) < 20) ? strlen(name) : 20;
+ 		int len = sizeof(elem->name) - 16 - 1;
+ 		char no[16] = "";
+ 
+-- 
+2.29.0
+

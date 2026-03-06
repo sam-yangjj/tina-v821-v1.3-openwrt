@@ -1,0 +1,14 @@
+choice
+	prompt "Glibc version" if TOOLCHAINOPTS
+	depends on USE_GLIBC
+	default GLIBC_USE_VERSION_2_33
+	help
+	  Select the C library implementation.
+
+	config GLIBC_USE_VERSION_2_33
+		bool "2.33"
+
+	config GLIBC_USE_VERSION_2_37
+		bool "2.37"
+
+endchoice

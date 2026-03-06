@@ -1,0 +1,40 @@
+From cd20b504e23405411f2733deeea78ccbc87e96ff Mon Sep 17 00:00:00 2001
+From: chengweipeng <chengweipeng@allwinnertech.com>
+Date: Tue, 30 Jul 2024 13:54:27 +0800
+Subject: [PATCH] elfutils: aarch64 fix build on gcc13.2
+
+Signed-off-by: chengweipeng <chengweipeng@allwinnertech.com>
+---
+ libdw/dwarf_frame_register.c | 2 +-
+ libebl/ebl_syscall_abi.c     | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libdw/dwarf_frame_register.c b/libdw/dwarf_frame_register.c
+index d0159fb..bcf3fa0 100644
+--- a/libdw/dwarf_frame_register.c
++++ b/libdw/dwarf_frame_register.c
+@@ -34,7 +34,7 @@
+ #include <dwarf.h>
+ 
+ int
+-dwarf_frame_register (Dwarf_Frame *fs, int regno, Dwarf_Op *ops_mem,
++dwarf_frame_register (Dwarf_Frame *fs, int regno, Dwarf_Op ops_mem[3],
+ 		      Dwarf_Op **ops, size_t *nops)
+ {
+   /* Maybe there was a previous error.  */
+diff --git a/libebl/ebl_syscall_abi.c b/libebl/ebl_syscall_abi.c
+index a25369d..d5424a2 100644
+--- a/libebl/ebl_syscall_abi.c
++++ b/libebl/ebl_syscall_abi.c
+@@ -34,7 +34,7 @@
+ 
+ 
+ int
+-ebl_syscall_abi (Ebl *ebl, int *sp, int *pc, int *callno, int *args)
++ebl_syscall_abi (Ebl *ebl, int *sp, int *pc, int *callno, int args[6])
+ {
+   return ebl != NULL ? ebl->syscall_abi (ebl, sp, pc, callno, args) : -1;
+ }
+-- 
+2.25.1
+

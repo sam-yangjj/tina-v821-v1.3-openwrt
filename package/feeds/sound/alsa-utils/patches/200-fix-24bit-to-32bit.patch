@@ -1,0 +1,18 @@
+Index: alsa-utils-1.2.4/aplay/aplay.c
+===================================================================
+--- alsa-utils-1.2.4.orig/aplay/aplay.c
++++ alsa-utils-1.2.4/aplay/aplay.c
+@@ -2633,11 +2633,11 @@ static void begin_wave(int fd, size_t cnt)
+ 	case SND_PCM_FORMAT_S16_LE:
+ 		bits = 16;
+ 		break;
++	case SND_PCM_FORMAT_S24_LE:
+ 	case SND_PCM_FORMAT_S32_LE:
+-        case SND_PCM_FORMAT_FLOAT_LE:
++	case SND_PCM_FORMAT_FLOAT_LE:
+ 		bits = 32;
+ 		break;
+-	case SND_PCM_FORMAT_S24_LE:
+ 	case SND_PCM_FORMAT_S24_3LE:
+ 		bits = 24;
+ 		break;

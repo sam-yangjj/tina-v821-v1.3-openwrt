@@ -1,0 +1,50 @@
+From 1b378b259752ba30c171631884366d10487293ed Mon Sep 17 00:00:00 2001
+From: liujialin <liujialin@allwinnertech.com>
+Date: Tue, 17 Oct 2023 16:25:49 +0800
+Subject: [PATCH] wds: fix segmentation fault when RTSP M16 receive such as
+ Content-Type: text/parameters Content-Length: 2
+
+Signed-off-by: liujialin <liujialin@allwinnertech.com>
+---
+ libwds/common/rtsp_input_handler.cpp | 18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
+
+diff --git a/libwds/common/rtsp_input_handler.cpp b/libwds/common/rtsp_input_handler.cpp
+index 489af80..a9d3c97 100755
+--- a/libwds/common/rtsp_input_handler.cpp
++++ b/libwds/common/rtsp_input_handler.cpp
+@@ -25,6 +25,7 @@
+ #include "libwds/rtsp/message.h"
+ 
+ #include <cassert>
++#include <iostream>
+ 
+ namespace wds {
+ 
+@@ -35,7 +36,22 @@ RTSPInputHandler::~RTSPInputHandler() {
+ }
+ 
+ void RTSPInputHandler::AddInput(const std::string& input) {
+-  rtsp_input_buffer_ += input;
++  std::string cmpstr("200 OK\r\n");
++  std::string delstr("Content-Type: text/parameters\r\nContent-Length: 2\r\n\r\n\r\n");
++  std::string addstr("Session: abcdefg123456\r\n\r\n");
++  std::string res = input;
++  size_t pos1 = input.find(cmpstr);
++  size_t pos2 = input.find(delstr);
++  if((pos1 != std::string::npos) && (pos2 != std::string::npos)) {
++    std::cout << "before res: " << res << std::endl;
++    res.erase(pos2, delstr.length());
++    res.insert(res.end(), addstr.begin(), addstr.end());
++    rtsp_input_buffer_ += res;
++    std::cout << "after res: " << res << std::endl;
++  } else {
++    rtsp_input_buffer_ += input;
++  }
++  // rtsp_input_buffer_ += input;
+ 
+   // First trying to get payload for the message obtained
+   // from the previous input.
+-- 
+2.29.0
+

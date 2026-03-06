@@ -1,0 +1,60 @@
+From 92b5c75b2731bf1b5a29d84654b2f703672fa7cf Mon Sep 17 00:00:00 2001
+From: zhangyuanjing <zhangyuanjing@allwinnertech.com>
+Date: Thu, 20 Nov 2025 14:10:23 +0800
+Subject: [PATCH] refactor(videoio): replace RTTI with template-based type name
+ helper
+
+The change removes dependency on typeid() and <typeinfo> header by introducing a template-based getTypeName() helper function. This improves portability and avoids RTTI overhead while maintaining the same functionality in error messages.
+---
+ modules/videoio/src/container_avi.cpp | 24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
+
+diff --git a/modules/videoio/src/container_avi.cpp b/modules/videoio/src/container_avi.cpp
+index ceb143f..cf6f456 100644
+--- a/modules/videoio/src/container_avi.cpp
++++ b/modules/videoio/src/container_avi.cpp
+@@ -6,11 +6,31 @@
+ #include "opencv2/videoio/container_avi.private.hpp"
+ #include <fstream>
+ #include <limits>
+-#include <typeinfo>
+ 
+ namespace cv
+ {
+ 
++// Helper function to get type name without RTTI
++template <typename T>
++inline const char* getTypeName()
++{
++    if (std::numeric_limits<T>::is_signed)
++    {
++        if (sizeof(T) == 1) return "int8_t";
++        else if (sizeof(T) == 2) return "int16_t";
++        else if (sizeof(T) == 4) return "int32_t";
++        else if (sizeof(T) == 8) return "int64_t";
++    }
++    else
++    {
++        if (sizeof(T) == 1) return "uint8_t";
++        else if (sizeof(T) == 2) return "uint16_t";
++        else if (sizeof(T) == 4) return "uint32_t";
++        else if (sizeof(T) == 8) return "uint64_t";
++    }
++    return "unknown integer type";
++}
++
+ // Utility function for safe integer conversions
+ template <typename D, typename S>
+ inline D safe_int_cast(S val, const char * msg = 0)
+@@ -24,7 +44,7 @@ inline D safe_int_cast(S val, const char * msg = 0)
+     {
+         if (!msg)
+             CV_Error(Error::StsOutOfRange,
+-                     cv::format("Can not convert integer values (%s -> %s), value 0x%jx is out of range", typeid(S).name(), typeid(D).name(), (uintmax_t)val));
++                     cv::format("Can not convert integer values (%s -> %s), value 0x%jx is out of range", getTypeName<S>(), getTypeName<D>(), (uintmax_t)val));
+         else
+             CV_Error(Error::StsOutOfRange, msg);
+     }
+-- 
+2.25.1
+

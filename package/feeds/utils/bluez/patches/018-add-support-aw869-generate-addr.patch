@@ -1,0 +1,137 @@
+From e5b223fd023e32bbf17daf68c91015ca48e22c83 Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Sat, 17 Sep 2022 12:29:52 +0800
+Subject: [PATCH] add support aw869 generate addr
+
+---
+ tools/hciattach_aic.c | 93 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 93 insertions(+)
+
+diff --git a/tools/hciattach_aic.c b/tools/hciattach_aic.c
+index e7a6cc6..a5ae5a9 100644
+--- a/tools/hciattach_aic.c
++++ b/tools/hciattach_aic.c
+@@ -10,6 +10,7 @@
+ #include <sys/termios.h>
+ #include <sys/ioctl.h>
+ #include <limits.h>
++#include <dirent.h>
+ #include "hciattach.h"
+ 
+ /******************************************************************************
+@@ -100,6 +101,10 @@
+ #define HCI_VSC_SET_PWR_CTRL_SLAVE_SIZE 1
+ #define HCI_VSC_SET_CPU_POWER_OFF_SIZE  1
+ 
++#ifndef AIC_BT_CONF_PATH_NAME
++#define AIC_BT_CONF_PATH_NAME "/etc/bluetooth/aic_bt.conf"
++#endif
++
+ typedef void (*hci_cback)(void *);
+ 
+ typedef struct {
+@@ -293,6 +298,84 @@ static uint8_t aic_send_hci_cmd(uint16_t cmd, uint8_t *payload, uint8_t len, hci
+ 	return BT_VND_OP_RESULT_FAIL;
+ }
+ 
++/*
++ * buf[0] - buf[6] contains the command header
++ * buf[7] - buf[12] contains the bdaddr, LSB - MSB
++ *
++ * The reserved LAP addresses are 0x9E8B00-0x9E8B3F
++ *
++ * return 1 if valid, 0 if not
++ */
++static int check_bdaddr_valid(unsigned char *buf)
++{
++	if (buf[9] == 0x9e && buf[8] == 0x8b
++			&& (buf[7] & ~(0x3f)) == 0) {
++		printf("bdaddr is not valid\n");
++		return 0;
++	}
++
++	return 1;
++}
++
++/*
++ * buf[0] - buf[6] contains the command header
++ * buf[7] - buf[12] contains the bdaddr, LSB - MSB
++ */
++static int generate_bdaddr(unsigned char *buf)
++{
++	int fd;
++	FILE* conf_fd = NULL;
++	unsigned mac_hex;
++	int i = 12; /* from MSB to LSB*/
++
++	conf_fd = fopen(AIC_BT_CONF_PATH_NAME, "r");
++	if(conf_fd) {
++		fscanf(conf_fd, "%x", &mac_hex);
++		while (!feof(conf_fd)) {
++			buf[i--] = mac_hex;
++			fscanf(conf_fd, "%x", &mac_hex);
++		}
++		fclose(conf_fd);
++
++		if (check_bdaddr_valid(buf))
++			return 0;
++	}
++
++	printf("generating random bdaddr...\n");
++
++	/* for Xradio, NAP is {0x22, 0x22}*/
++	buf[12] = 0x22;
++	buf[11] = 0x22;
++
++	srand(time(0));
++
++	do {
++		/* generating UAP - buf[10] */
++		buf[10] = rand() % (0xff + 1);
++
++		/* generating LAP[2] - buf[9] */
++		buf[9] = rand() % (0xff + 1);
++
++		/* generating LAP[1] - buf[8] */
++		buf[8] = rand() % (0xff + 1);
++
++		/* generating LAP[0] - buf[7] */
++		buf[7] = rand() % (0xff + 1);
++	} while (!check_bdaddr_valid(buf));
++
++	if(NULL == opendir("/etc/bluetooth"))
++		mkdir("/etc/bluetooth",0775);
++
++	conf_fd = fopen(AIC_BT_CONF_PATH_NAME, "w");
++	if (conf_fd) {
++		for (i = 12; i >=7; i--)
++			fprintf(conf_fd, "%02x ", buf[i]);
++		fclose(conf_fd);
++	}
++
++	return 0;
++}
++
+ static uint8_t hw_cfg_set_bd_addr(void *param)
+ {
+ 	uint8_t *p, msg_req[HCI_CMD_MAX_LEN];
+@@ -300,6 +383,16 @@ static uint8_t hw_cfg_set_bd_addr(void *param)
+ 	uint8_t i;
+ 	p = msg_req;
+ 
++	/* In the same way as with xradio */
++	uint8_t hci_write_bd_addr[] = { 0x01, 0x0a, 0xfc, 0x09, 0x02, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
++	if (generate_bdaddr(hci_write_bd_addr) < 0) {
++		fprintf(stderr, "generate random bdaddr failed, using the default address...\n");
++		goto df;
++	}
++	for (i = 0; i < 6; i++)
++		*(addr + i) = hci_write_bd_addr[12 - i];
++
++df:
+ 	AIC_DBG("Setting local bd addr to %02X:%02X:%02X:%02X:%02X:%02X",
+ 		addr[0], addr[1], addr[2],
+ 		addr[3], addr[4], addr[5]);
+-- 
+2.29.0
+

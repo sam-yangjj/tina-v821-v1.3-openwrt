@@ -1,0 +1,54 @@
+From b36b9b709f0c1f2370927c857ad7e030fd0d1e42 Mon Sep 17 00:00:00 2001
+From: chengweipeng <chengweipeng@allwinnertech.com>
+Date: Fri, 28 Apr 2023 15:12:53 +0800
+Subject: [PATCH] fix junk compile errors
+
+Signed-off-by: chengweipeng <chengweipeng@allwinnertech.com>
+---
+ src/current/fileop.c | 2 +-
+ src/current/iozone.c | 2 +-
+ src/current/libbif.c | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/current/fileop.c b/src/current/fileop.c
+index 70010f4..a2650e1 100755
+--- a/src/current/fileop.c
++++ b/src/current/fileop.c
+@@ -74,7 +74,7 @@ extern char *opterr;
+ int fsync();
+ int getopt();
+ #endif
+-int junk, *junkp;
++static int junk, *junkp;
+ int x,excel;
+ int verbose = 0;
+ int sz = 1;
+diff --git a/src/current/iozone.c b/src/current/iozone.c
+index 090dd5f..32e3098 100755
+--- a/src/current/iozone.c
++++ b/src/current/iozone.c
+@@ -1676,7 +1676,7 @@ int client_error;
+ 
+ char pit_hostname[40];
+ char pit_service[8];
+-int junk;
++static int junk;
+ 
+ /* 
+  * Host ports used to listen, and handle errors.
+diff --git a/src/current/libbif.c b/src/current/libbif.c
+index e9c949a..18b2bde 100755
+--- a/src/current/libbif.c
++++ b/src/current/libbif.c
+@@ -55,7 +55,7 @@
+ /* Middle Endian */
+ #define ENDIAN_4  4
+ 
+-int junk, *junkp;
++static int junk, *junkp;
+ 
+ 
+ #ifdef HAVE_ANSIC_C
+-- 
+2.25.1
+

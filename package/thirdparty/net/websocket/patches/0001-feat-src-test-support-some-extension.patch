@@ -1,0 +1,640 @@
+From 878733ac5dee078d77a77093429818d6ce48e171 Mon Sep 17 00:00:00 2001
+From: xuwugang <xuwugang@allwinnertech.com>
+Date: Wed, 16 Apr 2025 17:10:13 +0800
+Subject: [PATCH] feat(src/test): support some extension
+
+1. support ssl
+2. support send bin
+3. support pkt is finished in recv cb
+4. support set http user header
+5. support rws debug\info
+
+Signed-off-by: xuwugang <xuwugang@allwinnertech.com>
+---
+ CMakeLists.txt              |   1 +
+ librws.h                    |  42 +++++++-
+ src/rws_common.h            |   1 +
+ src/rws_frame.c             |  52 ++++++++++
+ src/rws_frame.h             |  12 +++
+ src/rws_socket.h            |  11 ++
+ src/rws_socketpriv.c        | 197 +++++++++++++++++++++++++++++++++++-
+ src/rws_socketpub.c         |  45 ++++++++
+ test/test_librws_creation.c |   4 +-
+ 9 files changed, 361 insertions(+), 4 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f87f88e..01dca46 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -187,6 +187,7 @@ if(WIN32)
+ 	target_link_libraries(rws ws2_32)
+ endif(WIN32)
+
++target_link_libraries(rws crypto ssl)
+
+ install(TARGETS rws
+ 		DESTINATION lib)
+diff --git a/librws.h b/librws.h
+index 9e1277e..99ca695 100644
+--- a/librws.h
++++ b/librws.h
+@@ -38,6 +38,29 @@
+ #define RWS_OS_WINDOWS 1
+ #endif
+
++#if defined __linux__
++#define RWS_OS_LINUX 1
++#endif
++
++#define RWS_SUPPORT_SSL 1
++#define RWS_SUPPORT_SEND_BIN 1
++#define RWS_SUPPORT_RECV_CB_PKT_IS_FINISHED 1
++#define RWS_SUPPORT_SET_HTTP_USER_HEADER 1
++
++#define RWS_DEBUG 0
++#define RWS_INFO  0
++
++#if RWS_DEBUG > 0
++#define RWS_LOGD(fmt, arg...) printf("[RWS][DEBUG]"fmt, ##arg)
++#else
++#define RWS_LOGD(fmt, arg...)
++#endif
++
++#if RWS_INFO > 0
++#define RWS_LOGI(fmt, arg...) printf("[RWS][INFO]"fmt, ##arg)
++#else
++#define RWS_LOGI(fmt, arg...)
++#endif
+
+ // extern
+ #if defined(__cplusplus) || defined(_cplusplus)
+@@ -145,7 +168,11 @@ typedef void (*rws_on_socket)(rws_socket socket);
+  @param text Pointer to reseived text.
+  @param length Received text lenght without null terminated char.
+  */
++#if RWS_SUPPORT_RECV_CB_PKT_IS_FINISHED
++typedef void (*rws_on_socket_recvd_text)(rws_socket socket, const char * text, const unsigned int length, rws_bool is_finished);
++#else
+ typedef void (*rws_on_socket_recvd_text)(rws_socket socket, const char * text, const unsigned int length);
++#endif
+
+
+ /**
+@@ -154,8 +181,11 @@ typedef void (*rws_on_socket_recvd_text)(rws_socket socket, const char * text, c
+  @param data Received binary data.
+  @param length Received binary data lenght.
+  */
++#if RWS_SUPPORT_RECV_CB_PKT_IS_FINISHED
++typedef void (*rws_on_socket_recvd_bin)(rws_socket socket, const void * data, const unsigned int length, rws_bool is_finished);
++#else
+ typedef void (*rws_on_socket_recvd_bin)(rws_socket socket, const void * data, const unsigned int length);
+-
++#endif
+
+ // socket
+
+@@ -261,6 +291,9 @@ RWS_API(void) rws_socket_set_path(rws_socket socket, const char * path);
+  */
+ RWS_API(const char *) rws_socket_get_path(rws_socket socket);
+
++#if RWS_SUPPORT_SET_HTTP_USER_HEADER
++RWS_API(void) rws_socket_set_ext_head(rws_socket socket, const char *user_header);
++#endif
+
+ /**
+  @brief Get socket last error object handle.
+@@ -307,6 +340,13 @@ RWS_API(rws_bool) rws_socket_is_connected(rws_socket socket);
+  */
+ RWS_API(rws_bool) rws_socket_send_text(rws_socket socket, const char * text);
+
++#if RWS_SUPPORT_SEND_BIN
++RWS_API(rws_bool) rws_socket_send_bin_start(rws_socket socket, const char *bin, size_t len);
++
++RWS_API(rws_bool) rws_socket_send_bin_continue(rws_socket socket, const char *bin, size_t len);
++
++RWS_API(rws_bool) rws_socket_send_bin_finish(rws_socket socket, const char *bin, size_t len);
++#endif
+
+ /**
+  @brief Set socket user defined object pointer for identificating socket object.
+diff --git a/src/rws_common.h b/src/rws_common.h
+index 1e55ec9..710afa1 100644
+--- a/src/rws_common.h
++++ b/src/rws_common.h
+@@ -25,6 +25,7 @@
+ #define __RWS_COMMON_H__ 1
+
+ #include <stdio.h>
++#include "../librws.h"
+
+ /* check os */
+ /* gcc -dM -E - < /dev/null */
+diff --git a/src/rws_frame.c b/src/rws_frame.c
+index 1f35c3d..7bc46f3 100644
+--- a/src/rws_frame.c
++++ b/src/rws_frame.c
+@@ -116,6 +116,58 @@ _rws_frame * rws_frame_create_with_recv_data(const void * data, const size_t dat
+ 	return NULL;
+ }
+
++#if RWS_SUPPORT_SEND_BIN
++void litews_frame_fill_with_send_bin_data(_rws_frame * f, unsigned char * header, const size_t data_size, rws_binary bin_type)
++{
++	const unsigned int size = (unsigned int)data_size;
++
++	if(bin_type == rws_binary_start)
++	{
++		*header++ = 0x00 | f->opcode;
++	}
++	else if(bin_type == rws_binary_continue)
++	{
++		*header++ = 0x00 | f->opcode;
++	}
++	else
++	{
++		*header++ = 0x80 | f->opcode;
++	}
++
++	if (size < 126)
++	{
++		*header++ = (size & 0xff) | (f->is_masked ? 0x80 : 0);
++		f->header_size = 2;
++	}
++	else if (size < 65536)
++	{
++		*header++ = 126 | (f->is_masked ? 0x80 : 0);
++		*header++ = (size >> 8) & 0xff;
++		*header++ = size & 0xff;
++		f->header_size = 4;
++	}
++	else
++	{
++		*header++ = 127 | (f->is_masked ? 0x80 : 0);
++
++		*(unsigned int *)header = 0;
++		header += 4;
++
++		*header++ = (size >> 24) & 0xff;
++		*header++ = (size >> 16) & 0xff;
++		*header++ = (size >> 8) & 0xff;
++		*header++ = size & 0xff;
++		f->header_size = 10;
++	}
++
++	if (f->is_masked)
++	{
++		memcpy(header, f->mask, 4);
++		f->header_size += 4;
++	}
++}
++#endif /* RWS_SUPPORT_SEND_BIN */
++
+ void rws_frame_create_header(_rws_frame * f, unsigned char * header, const size_t data_size) {
+ 	const unsigned int size = (unsigned int)data_size;
+
+diff --git a/src/rws_frame.h b/src/rws_frame.h
+index 4f927c4..fa1741c 100644
+--- a/src/rws_frame.h
++++ b/src/rws_frame.h
+@@ -36,6 +36,14 @@ typedef enum _rws_opcode {
+ 	rws_opcode_pong = 0xA // %xA denotes a pong
+ } rws_opcode;
+
++#if RWS_SUPPORT_SEND_BIN
++typedef enum _rws_binary {
++	rws_binary_start,
++	rws_binary_continue,
++	rws_binary_finish
++} rws_binary;
++#endif
++
+ typedef struct _rws_frame_struct {
+ 	void * data;
+ 	size_t data_size;
+@@ -48,6 +56,10 @@ typedef struct _rws_frame_struct {
+
+ size_t rws_check_recv_frame_size(const void *data,const size_t data_size);
+
++#if RWS_SUPPORT_SEND_BIN
++void litews_frame_fill_with_send_bin_data(_rws_frame * f, unsigned char * header, const size_t data_size, rws_binary bin_type);
++#endif
++
+ _rws_frame * rws_frame_create_with_recv_data(const void * data, const size_t data_size);
+
+ // data - should be null, and setted by newly created. 'data' & 'data_size' can be null
+diff --git a/src/rws_socket.h b/src/rws_socket.h
+index 4017732..0fd6c8c 100644
+--- a/src/rws_socket.h
++++ b/src/rws_socket.h
+@@ -65,6 +65,9 @@ typedef struct _rws_socket_struct {
+ 	char * scheme;
+ 	char * host;
+ 	char * path;
++#if RWS_SUPPORT_SET_HTTP_USER_HEADER
++	char * user_header;
++#endif
+
+ 	char * sec_ws_accept; // "Sec-WebSocket-Accept" field from handshake
+
+@@ -93,6 +96,10 @@ typedef struct _rws_socket_struct {
+
+ 	rws_mutex work_mutex;
+ 	rws_mutex send_mutex;
++#if RWS_SUPPORT_SSL
++	char use_ssl;
++	void *ssl_session;
++#endif
+ } _rws_socket;
+
+ rws_bool rws_socket_process_handshake_responce(_rws_socket * s);
+@@ -143,6 +150,10 @@ void rws_socket_append_send_frames(_rws_socket * s, _rws_frame * frame);
+
+ rws_bool rws_socket_send_text_priv(_rws_socket * s, const char * text);
+
++#if RWS_SUPPORT_SEND_BIN
++rws_bool rws_socket_send_bin_priv(_rws_socket * s, unsigned char * bin, size_t size, rws_binary bin_type);
++#endif
++
+ void rws_socket_inform_recvd_frames(_rws_socket * s);
+
+ void rws_socket_set_option(rws_socket_t s, int option, int value);
+diff --git a/src/rws_socketpriv.c b/src/rws_socketpriv.c
+index 28eb29a..280b6b4 100644
+--- a/src/rws_socketpriv.c
++++ b/src/rws_socketpriv.c
+@@ -34,6 +34,107 @@
+ #define	WSAEINPROGRESS     EINPROGRESS
+ #endif
+
++#if RWS_SUPPORT_SSL
++#include <openssl/ssl.h>
++#include <openssl/err.h>
++#include <openssl/x509.h>
++
++typedef struct {
++	SSL *ssl;
++	SSL_CTX *ctx;
++} ssl_session_t;
++
++void *port_ssl_open(rws_socket_t sock, char *host)
++{
++	ssl_session_t *session = (ssl_session_t *)malloc(sizeof(ssl_session_t));
++
++	if (session == NULL) {
++		perror("ssl session malloc failed");
++		return NULL;
++	}
++
++	RWS_LOGI("1. ssl init()\n");
++	SSL_library_init();
++	OpenSSL_add_all_algorithms();
++	SSL_load_error_strings();
++
++	RWS_LOGI("2. ssl ctx new()\n");
++	SSL_CTX *ctx = SSL_CTX_new(TLS_client_method());
++	if (ctx == NULL) {
++		perror("SSL_CTX_new failed");
++		return NULL;
++	}
++	session->ctx = ctx;
++
++	RWS_LOGI("3. ssl new()\n");
++	SSL *ssl = SSL_new(ctx);
++	if (ssl == NULL) {
++		perror("SSL_new failed");
++		return NULL;
++	}
++	session->ssl = ssl;
++
++	SSL_set_fd(ssl, sock);
++
++	/* set SNI externd */
++	const char *hostname = host;
++	if (SSL_set_tlsext_host_name(ssl, hostname) != 1) {
++		fprintf(stderr, "Error setting SNI\n");
++		return NULL;
++	}
++
++	RWS_LOGI("4. ssl connect() ...\n");
++	if (SSL_connect(ssl) != 1) {
++		perror("SSL_connect failed");
++		return NULL;
++	}
++	RWS_LOGI("5. ssl connect() successfully\n");
++
++	return (void *)session;
++}
++
++void port_ssl_close(void *_session)
++{
++	ssl_session_t *session = (ssl_session_t *)_session;
++
++	SSL *ssl = session->ssl;
++	SSL_CTX *ctx = session->ctx;
++
++	SSL_shutdown(ssl);
++
++	SSL_free(ssl);
++	SSL_CTX_free(ctx);
++
++	free(session);
++}
++
++int port_ssl_write(void *_session, const char *data, size_t data_size)
++{
++	int bytes_sent = 0;
++
++	ssl_session_t *session = (ssl_session_t *)_session;
++
++	SSL *ssl = session->ssl;
++
++	bytes_sent = SSL_write(ssl, data, data_size);
++
++	return bytes_sent;
++}
++
++int port_ssl_read(void *_session, char *buff, size_t read_bytes)
++{
++	int bytes_received = 0;
++
++	ssl_session_t *session = (ssl_session_t *)_session;
++
++	SSL *ssl = session->ssl;
++
++	bytes_received = SSL_read(ssl, buff, read_bytes);
++
++	return bytes_received;
++}
++#endif /* RWS_SUPPORT_SSL */
++
+ unsigned int rws_socket_get_next_message_id(_rws_socket * s) {
+ 	const unsigned int mess_id = ++s->next_message_id;
+ 	if (mess_id > 9999999) {
+@@ -66,12 +167,20 @@ void rws_socket_inform_recvd_frames(_rws_socket * s) {
+ 				switch (frame->opcode) {
+ 					case rws_opcode_text_frame:
+ 						if (s->on_recvd_text) {
++#if RWS_SUPPORT_RECV_CB_PKT_IS_FINISHED
++							s->on_recvd_text(s, (const char *)frame->data, (unsigned int)frame->data_size, frame->is_finished);
++#else
+ 							s->on_recvd_text(s, (const char *)frame->data, (unsigned int)frame->data_size);
++#endif
+ 						}
+ 						break;
+ 					case rws_opcode_binary_frame:
+ 						if (s->on_recvd_bin) {
++#if RWS_SUPPORT_RECV_CB_PKT_IS_FINISHED
++							s->on_recvd_bin(s, frame->data, (unsigned int)frame->data_size, frame->is_finished);
++#else
+ 							s->on_recvd_bin(s, frame->data, (unsigned int)frame->data_size);
++#endif
+ 						}
+ 						break;
+ 					default: break;
+@@ -144,6 +253,11 @@ rws_bool rws_socket_send(_rws_socket * s, const void * data, const size_t data_s
+ 	rws_error_delete_clean(&s->error);
+
+ 	//errno = -1;
++#if RWS_SUPPORT_SSL
++	if (s->use_ssl) {
++		sended = port_ssl_write(s->ssl_session, data, data_size);
++	} else {
++#endif
+ #if defined(RWS_OS_WINDOWS)
+ 	sended = send(s->socket, (const char *)data, data_size, 0);
+     error_number = WSAGetLastError();
+@@ -151,7 +265,9 @@ rws_bool rws_socket_send(_rws_socket * s, const void * data, const size_t data_s
+ 	sended = (int)send(s->socket, data, (int)data_size, 0);
+     error_number = errno;
+ #endif
+-
++#if RWS_SUPPORT_SSL
++	}
++#endif
+
+ 	if (sended > 0) {
+ 		return rws_true;
+@@ -172,7 +288,15 @@ rws_bool rws_socket_recv(_rws_socket * s) {
+ 	char buff[8192];
+ 	rws_error_delete_clean(&s->error);
+ 	while (is_reading) {
++#if RWS_SUPPORT_SSL
++		if (s->use_ssl) {
++			len = port_ssl_read(s->ssl_session, buff, 8192);
++		} else {
++#endif
+ 		len = (int)recv(s->socket, buff, 8192, 0);
++#if RWS_SUPPORT_SSL
++		}
++#endif
+ #if defined(RWS_OS_WINDOWS)
+ 		error_number = WSAGetLastError();
+ #else
+@@ -367,6 +491,16 @@ void rws_socket_send_handshake(_rws_socket * s) {
+ 	} else {
+ 		writed += rws_sprintf(ptr + writed, 512 - writed, "Host: %s:%i\r\n", s->host, s->port);
+ 	}
++#if RWS_SUPPORT_SET_HTTP_USER_HEADER
++	RWS_LOGI("1.writed: %d\n", writed);
++
++	if (s->user_header) {
++		writed += rws_sprintf(ptr + writed, 512 - writed,
++				"%s",
++				s->user_header);
++	}
++	RWS_LOGI("2.user_header:\n %s \n writed: %d\n", s->user_header, writed);
++#endif
+
+ 	writed += rws_sprintf(ptr + writed, 512 - writed,
+ 						  "Upgrade: websocket\r\n"
+@@ -381,6 +515,7 @@ void rws_socket_send_handshake(_rws_socket * s) {
+ 						  "\r\n",
+ 						  "dGhlIHNhbXBsZSBub25jZQ==");
+
++	RWS_LOGI("3.http_header:\n %s \n writed: %d\n", buff, writed);
+ 	if (rws_socket_send(s, buff, writed)) {
+ 		s->command = COMMAND_WAIT_HANDSHAKE_RESPONCE;
+ 	} else {
+@@ -468,9 +603,22 @@ void rws_socket_connect_to_host(_rws_socket * s) {
+ 				rws_socket_set_option(sock, SO_ERROR, 1); // When an error occurs on a socket, set error variable so_error and notify process
+ 				rws_socket_set_option(sock, SO_KEEPALIVE, 1); // Periodically test if connection is alive
+
++				RWS_LOGI("tcp connect ...\n");
+ 				if (connect(sock, p->ai_addr, p->ai_addrlen) == 0) {
++					RWS_LOGI("tcp connect successfully.\n");
+                     s->received_len = 0;
+ 					s->socket = sock;
++#if RWS_SUPPORT_SSL
++					if ((s->scheme && strcmp(s->scheme, "wss") == 0)) {
++						s->use_ssl = 1;
++						s->ssl_session = (void *)port_ssl_open(sock, s->host);
++						if (s->ssl_session == NULL) {
++							goto err;
++						}
++					} else {
++						s->use_ssl = 0;
++					}
++#endif
+ #if defined(RWS_OS_WINDOWS)
+ 					// If iMode != 0, non-blocking mode is enabled.
+ 					iMode = 1;
+@@ -480,6 +628,9 @@ void rws_socket_connect_to_host(_rws_socket * s) {
+ #endif
+ 					break;
+ 				}
++#if RWS_SUPPORT_SSL
++			err:
++#endif
+ 				RWS_SOCK_CLOSE(sock);
+ 			}
+ 		}
+@@ -599,10 +750,17 @@ void rws_socket_close(_rws_socket * s) {
+ 	if (s->socket != RWS_INVALID_SOCKET) {
+ 		RWS_SOCK_CLOSE(s->socket);
+ 		s->socket = RWS_INVALID_SOCKET;
++#if RWS_SUPPORT_SSL
++		if (s->use_ssl) {
++			port_ssl_close(s->ssl_session);
++			s->ssl_session = NULL;
++		}
++#endif
+ #if defined(RWS_OS_WINDOWS)
+ 		WSACleanup();
+ #endif
+ 	}
++
+ 	s->is_connected = rws_false;
+ }
+
+@@ -645,6 +803,43 @@ rws_bool rws_socket_send_text_priv(_rws_socket * s, const char * text) {
+ 	return rws_true;
+ }
+
++#if RWS_SUPPORT_SEND_BIN
++rws_bool rws_socket_send_bin_priv(_rws_socket * s, unsigned char * bin, size_t size, rws_binary bin_type)
++{
++	_rws_frame * frame = NULL;
++
++	frame = rws_frame_create();
++	if (frame != NULL)
++	{
++		frame->is_masked = rws_true;
++		switch (bin_type)
++		{
++			case rws_binary_start:
++				//RWS_LOGI("rws_binary_start\n");
++				frame->opcode = rws_opcode_binary_frame;
++				break;
++			case rws_binary_continue:
++				//RWS_LOGI("rws_binary_continue\n");
++				frame->opcode = rws_opcode_continuation;
++				break;
++			case rws_binary_finish:
++				//RWS_LOGI("rws_binary_finish\n");
++				frame->opcode = rws_opcode_continuation;
++				break;
++		}
++		litews_frame_fill_with_send_bin_data(frame, bin, size, bin_type);
++		rws_socket_append_send_frames(s, frame);
++
++		return rws_true;
++	}
++	else
++	{
++		/*Need to free data????*/
++		return rws_false;
++	}
++}
++#endif /* RWS_SUPPORT_SEND_BIN */
++
+ void rws_socket_delete_all_frames_in_list(_rws_list * list_with_frames) {
+ 	_rws_frame * frame = NULL;
+ 	_rws_node * cur = list_with_frames;
+diff --git a/src/rws_socketpub.c b/src/rws_socketpub.c
+index b792a48..e6189f7 100644
+--- a/src/rws_socketpub.c
++++ b/src/rws_socketpub.c
+@@ -99,6 +99,41 @@ rws_bool rws_socket_send_text(rws_socket socket, const char * text) {
+ 	return r;
+ }
+
++#if RWS_SUPPORT_SEND_BIN
++rws_bool rws_socket_send_bin_start(rws_socket socket, const char *bin, size_t len) {
++	_rws_socket * s = (_rws_socket *)socket;
++	rws_bool r = rws_false;
++	if (s) {
++		rws_mutex_lock(s->send_mutex);
++		r = rws_socket_send_bin_priv(s, (unsigned char *)bin, len, rws_binary_start);
++		rws_mutex_unlock(s->send_mutex);
++	}
++	return r;
++}
++
++rws_bool rws_socket_send_bin_continue(rws_socket socket, const char *bin, size_t len) {
++	_rws_socket * s = (_rws_socket *)socket;
++	rws_bool r = rws_false;
++	if (s) {
++		rws_mutex_lock(s->send_mutex);
++		r = rws_socket_send_bin_priv(s, (unsigned char *)bin, len, rws_binary_continue);
++		rws_mutex_unlock(s->send_mutex);
++	}
++	return r;
++}
++
++rws_bool rws_socket_send_bin_finish(rws_socket socket, const char *bin, size_t len) {
++	_rws_socket * s = (_rws_socket *)socket;
++	rws_bool r = rws_false;
++	if (s) {
++		rws_mutex_lock(s->send_mutex);
++		r = rws_socket_send_bin_priv(s, (unsigned char *)bin, len, rws_binary_finish);
++		rws_mutex_unlock(s->send_mutex);
++	}
++	return r;
++}
++#endif /* RWS_SUPPORT_SEND_BIN */
++
+ #if !defined(RWS_OS_WINDOWS)
+ void rws_socket_handle_sigpipe(int signal_number) {
+ 	printf("\nlibrws handle sigpipe %i", signal_number);
+@@ -243,6 +278,16 @@ int rws_socket_get_port(rws_socket socket) {
+ 	return s ? s->port : -1;
+ }
+
++#if RWS_SUPPORT_SET_HTTP_USER_HEADER
++void rws_socket_set_ext_head(rws_socket socket, const char *user_header) {
++	_rws_socket * s = (_rws_socket *)socket;
++	if (s) {
++		rws_string_delete(s->user_header);
++		s->user_header = rws_string_copy(user_header);
++	}
++}
++#endif
++
+ /*
+ unsigned int _rws_socket_get_receive_buffer_size(rws_socket_t socket) {
+ 	unsigned int size = 0;
+diff --git a/test/test_librws_creation.c b/test/test_librws_creation.c
+index 161dd01..e80fb5f 100644
+--- a/test/test_librws_creation.c
++++ b/test/test_librws_creation.c
+@@ -43,7 +43,7 @@
+
+ static rws_socket _socket = NULL;
+
+-static void on_socket_received_text(rws_socket socket, const char * text, const unsigned int length) {
++static void on_socket_received_text(rws_socket socket, const char * text, const unsigned int length, rws_bool is_finished) {
+ 	char buff[8*1024];
+ 	memcpy(buff, text, length);
+ 	buff[length] = 0;
+@@ -51,7 +51,7 @@ static void on_socket_received_text(rws_socket socket, const char * text, const
+ 	printf("\nSocket text: %s", text);
+ }
+
+-static void on_socket_received_bin(rws_socket socket, const void * data, const unsigned int length) {
++static void on_socket_received_bin(rws_socket socket, const void * data, const unsigned int length, rws_bool is_finished) {
+ 	char buff[8*1024];
+ 	memcpy(buff, data, length);
+ 	buff[length] = 0;
+--
+2.29.0
+

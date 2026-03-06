@@ -1,0 +1,657 @@
+config PACKAGE_eyesee-mpp-middleware-demo_config
+	bool "eyesee-mpp-middleware-demo config"
+	default n
+	select PACKAGE_eyesee-mpp-middleware-demo
+	help
+	  move config out of PACKAGE_eyesee-mpp-middleware-demo to solve recursive dependency.
+
+if PACKAGE_eyesee-mpp-middleware-demo_config
+
+# mpp sample config
+config mpp_sample
+	bool "select mpp sample"
+	select mpp_sample_configfileparser
+	default n
+	help
+	  select the sample to be compiled.
+
+config mpp_sample_aec
+	bool "mpp sample aec"
+	depends on mpp_sample
+	depends on mpp_aio
+	help
+	  mpp sample aec.
+
+config mpp_sample_aenc
+	bool "mpp sample aenc"
+	depends on mpp_sample
+	depends on mpp_aenc
+	depends on mpp_aio
+	help
+	  mpp sample aenc.
+
+config mpp_sample_ai
+	bool "mpp sample ai"
+	depends on mpp_sample
+	depends on mpp_aio
+	help
+	  mpp sample ai.
+
+config mpp_sample_ai2aenc
+	bool "mpp sample ai2aenc"
+	depends on mpp_sample
+	depends on mpp_aenc
+	depends on mpp_aio
+	help
+	  mpp sample ai2aenc.
+
+config mpp_sample_ai2aenc2muxer
+	bool "mpp sample ai2aenc2muxer"
+	depends on mpp_sample
+	depends on mpp_aenc
+	depends on mpp_aio
+	depends on mpp_muxer
+	help
+	  mpp sample ai2aenc2muxer.
+
+config mpp_sample_ao
+	bool "mpp sample ao"
+	depends on mpp_sample
+	depends on mpp_aio
+	help
+	  mpp sample ao.
+
+config mpp_sample_aoSync
+	bool "mpp sample aoSync"
+	depends on mpp_sample
+	depends on mpp_aio
+	help
+	  mpp sample aoSync.
+
+config mpp_sample_avmuxer
+	bool "mpp sample avmuxer"
+	depends on mpp_sample
+	depends on mpp_aenc
+	depends on mpp_aio
+	depends on mpp_muxer
+	help
+	  mpp sample avmuxer.
+
+config mpp_sample_avplayer
+	bool "mpp sample avplayer"
+	depends on mpp_sample
+	depends on mpp_demuxer
+	depends on mpp_vdec
+	depends on mpp_vo
+	depends on mpp_adec
+	depends on mpp_aio
+	help
+	  mpp sample avplayer show how to play.
+
+config mpp_sample_CodecParallel
+	bool "mpp sample CodecParallel"
+	depends on mpp_sample
+	depends on mpp_demuxer
+	depends on mpp_vdec
+#	depends on mpp_hw_display
+#	depends on mpp_vo
+	help
+	  mpp sample Codec Parallel.
+
+config mpp_sample_demux
+	bool "mpp sample demux"
+	depends on mpp_sample
+	depends on mpp_demuxer
+	help
+	  mpp sample demux.
+
+config mpp_sample_demux2adec
+	bool "mpp sample demux2adec"
+	depends on mpp_sample
+	depends on mpp_demuxer
+	depends on mpp_adec
+	help
+	  mpp sample demux2adec.
+
+config mpp_sample_demux2adec2ao
+	bool "mpp sample demux2adec2ao"
+	depends on mpp_sample
+	depends on mpp_demuxer
+	depends on mpp_adec
+	depends on mpp_aio
+	help
+	  mpp sample demux2adec2ao.
+
+config mpp_sample_demux2vdec
+	bool "mpp sample demux2vdec"
+	depends on mpp_sample
+	depends on mpp_demuxer
+	depends on mpp_vdec
+	help
+	  mpp sample demux2vdec.
+
+config mpp_sample_demux2vdec_saveFrame
+	bool "mpp sample demux2vdec_saveFrame"
+	depends on mpp_sample
+	depends on mpp_demuxer
+	depends on mpp_vdec
+	help
+	  mpp sample demux2vdec_saveFrame.
+
+config mpp_sample_demux2vdecsoft_saveFrame
+	bool "mpp sample demux2vdecsoft_saveFrame"
+	depends on mpp_sample
+	depends on mpp_demuxer
+	depends on mpp_vdecsoft
+	help
+	  mpp sample demux2vdecsoft_saveFrame.
+
+config mpp_sample_demux2vdec2vo
+	bool "mpp sample demux2vdec2vo"
+	depends on mpp_sample
+	depends on mpp_demuxer
+	depends on mpp_vdec
+	depends on mpp_hw_display
+	depends on mpp_vo
+	help
+	  mpp sample demux2vdec2vo.
+
+config mpp_sample_demux2vdecsoft2vo
+	bool "mpp sample demux2vdecsoft2vo"
+	depends on mpp_sample
+	depends on mpp_demuxer
+	depends on mpp_vdecsoft
+	depends on mpp_hw_display
+	depends on mpp_vo
+	help
+	  mpp sample demux2vdecsoft2vo.
+
+config mpp_sample_demux2vdecDynRot2vo
+	bool "mpp sample demux2vdecDynRot2vo"
+	depends on mpp_sample
+	depends on mpp_demuxer
+	depends on mpp_vdec
+	depends on mpp_hw_display
+	depends on mpp_vo
+	help
+	  mpp sample demux2vdecDynRot2vo.
+
+config mpp_sample_driverVipp
+	bool "mpp sample driverVipp"
+	depends on mpp_sample
+	help
+	  mpp sample driverVipp.
+
+config mpp_sample_file_repair
+	bool "mpp sample file_repair"
+	depends on mpp_sample
+	depends on mpp_muxer
+	depends on mpp_filerepair
+	help
+	  mpp sample file_repair.
+
+config mpp_sample_g2d
+	bool "mpp sample g2d"
+	depends on mpp_sample
+	help
+	  mpp sample g2d.
+
+config mpp_sample_glog
+	bool "mpp sample glog"
+	depends on mpp_sample
+	help
+	  mpp sample glog.
+
+config mpp_sample_MotionDetect
+	bool "mpp sample MotionDetect"
+	depends on mpp_sample
+	help
+	  mpp sample_MotionDetect to test venc motion detection.
+
+config mpp_sample_multi_vi2venc2muxer
+	bool "mpp sample multi_vi2venc2muxer"
+	depends on mpp_sample
+	depends on mpp_muxer
+	help
+	  mpp sample multi_vi2venc2muxer.
+
+config mpp_sample_muxer_multi_stream
+	bool "mpp sample muxer_multi_stream"
+	depends on mpp_sample
+	depends on mpp_vi
+	depends on mpp_venc
+	depends on mpp_muxer
+	help
+	  mpp sample muxer_multi_stream.
+
+config mpp_sample_OnlineVenc
+	bool "mpp sample OnlineVenc"
+	depends on mpp_sample
+	depends on mpp_venc
+	help
+	  mpp sample OnlineVenc.
+
+config mpp_sample_pdet
+	bool "mpp sample pdet"
+	depends on mpp_sample
+	depends on mpp_vi
+	help
+	  mpp sample pdet.
+
+config mpp_sample_recorder
+	bool "mpp sample recorder"
+	depends on mpp_sample
+	depends on mpp_vi
+	depends on mpp_venc
+	depends on mpp_muxer
+	depends on mpp_vo
+	depends on mpp_hw_display
+	help
+	  mpp sample recorder.
+
+config mpp_sample_CDR_demo
+	bool "mpp sample CDR_demo"
+	depends on mpp_sample
+	depends on mpp_vi
+	depends on mpp_venc
+	depends on mpp_muxer
+	depends on mpp_vo
+	depends on mpp_hw_display
+	help
+	  mpp sample CDR_demo.
+
+config mpp_sample_region
+	bool "mpp sample region"
+	depends on mpp_sample
+	depends on mpp_vi
+	depends on mpp_venc
+	help
+	  mpp sample region.
+
+config mpp_sample_rtsp
+	bool "mpp sample rtsp"
+	depends on mpp_sample
+	depends on mpp_vi
+	depends on mpp_venc
+	help
+	  mpp sample rtsp.
+
+config mpp_sample_smartIPC_demo
+	bool "mpp sample smartIPC_demo"
+	depends on mpp_sample
+	depends on mpp_vi
+	depends on mpp_venc
+	depends on mpp_system_rgb_ctrl
+	help
+	  mpp sample smartIPC_demo.
+
+config mpp_sample_select
+	bool "mpp sample select"
+	depends on mpp_sample
+	depends on mpp_aenc
+	help
+	  mpp sample select.
+
+config mpp_sample_takePicture
+	bool "mpp sample takePicture"
+	depends on mpp_sample
+	depends on mpp_vi
+	depends on mpp_venc
+	help
+	  mpp sample takePicture.
+
+config mpp_sample_multi_takePicture
+	bool "mpp sample multi takePicture"
+	depends on mpp_sample
+	depends on mpp_vi
+	depends on mpp_venc
+	help
+	  mpp sample multi takePicture.
+
+config mpp_sample_identifyQRCode
+    bool "mpp sample identifyQRCode"
+	depends on mpp_sample
+	depends on mpp_vi
+	help
+	  mpp sample identifyQRCode.
+
+config mpp_sample_timelapse
+	bool "mpp sample timelapse"
+	depends on mpp_sample
+	depends on mpp_muxer
+	depends on mpp_vi
+	depends on mpp_venc
+	help
+	  mpp sample timelapse.
+
+config mpp_sample_UILayer
+	bool "mpp sample UILayer"
+	depends on mpp_sample
+	depends on mpp_hw_display
+	depends on mpp_vo
+	help
+	  mpp sample UILayer.
+
+config mpp_sample_uvcin
+	bool "mpp sample uvc in"
+	depends on mpp_sample
+	depends on mpp_uvc
+	help
+	  mpp sample uvc_vo.
+
+config mpp_sample_uvc_vo
+	bool "mpp sample uvc_vo"
+	depends on mpp_sample_uvcin
+	depends on mpp_uvc
+	depends on mpp_hw_display
+	depends on mpp_vo
+	help
+	  mpp sample uvc_vo.
+
+config mpp_sample_uvc2vdec_vo
+	bool "mpp sample uvc2vdec_vo"
+	depends on mpp_sample_uvcin
+	depends on mpp_uvc
+	depends on mpp_hw_display
+	depends on mpp_vo
+	depends on mpp_vdec
+	help
+	  mpp sample uvc2vdec_vo.
+
+config mpp_sample_uvc2vdenc2vo
+	bool "mpp sample uvc2vdenc2vo"
+	depends on mpp_sample_uvcin
+	depends on mpp_uvc
+	depends on mpp_hw_display
+	depends on mpp_vo
+	depends on mpp_vdec
+	help
+	  mpp sample uvc2vdenc2vo.
+
+config mpp_sample_uvc2vo
+	bool "mpp sample uvc2vo"
+	depends on mpp_sample_uvcin
+	depends on mpp_uvc
+	depends on mpp_hw_display
+	depends on mpp_vo
+	help
+	  mpp sample uvc2vo.
+
+config mpp_sample_uvc_vcodec_vo_uac
+	bool "mpp sample uvc_vcodec_vo_uac"
+	depends on mpp_sample_uvcin
+	depends on mpp_uvc
+	depends on mpp_hw_display
+	depends on mpp_vo
+	help
+	  mpp sample uvc_vcodec_vo_uac as uvc_host.
+
+config mpp_sample_uvc_vi_codec
+	bool "mpp sample uvc_vi_codec"
+	depends on mpp_sample_uvcin
+	depends on mpp_uvc
+	depends on mpp_hw_display
+	depends on mpp_vo
+	help
+	  mpp sample uvc_vi_codec to show usb_camera and mipi_camera work together.
+
+config mpp_sample_uvcout
+	bool "mpp sample uvcout"
+	depends on mpp_sample
+	help
+	  mpp sample uvcout.
+
+config mpp_sample_uac
+	bool "mpp sample uac"
+	depends on mpp_sample
+	depends on mpp_uvc
+	help
+	  mpp sample uac.
+
+config mpp_sample_vdec
+	bool "mpp sample vdec"
+	depends on mpp_sample
+	depends on mpp_vdec
+	help
+	  mpp sample vdec.
+
+config mpp_sample_vdecsoft
+	bool "mpp sample vdec soft"
+	depends on mpp_sample
+	depends on mpp_vdecsoft
+	help
+	  mpp sample vedc soft.
+
+config mpp_sample_venc
+	bool "mpp sample venc"
+	depends on mpp_sample
+	depends on mpp_venc
+	help
+	  mpp sample venc.
+
+config mpp_sample_virvi
+	bool "mpp sample virvi"
+	depends on mpp_sample
+	depends on mpp_vi
+	help
+	  mpp sample virvi.
+
+config mpp_sample_virvi2venc
+	bool "mpp sample virvi2venc"
+	depends on mpp_sample
+	depends on mpp_vi
+	depends on mpp_venc
+	help
+	  mpp sample virvi2venc.
+
+config mpp_sample_virvi2venc2ce
+	bool "mpp sample virvi2venc2ce"
+	depends on mpp_sample
+	depends on mpp_vi
+	depends on mpp_venc
+	help
+	  mpp sample virvi2venc2ce.
+
+config mpp_sample_twinchn_virvi2venc2ce
+	bool "mpp sample twinchn_virvi2venc2ce"
+	depends on mpp_sample
+	help
+	  mpp sample twinchn_virvi2venc2ce.
+
+config mpp_sample_virvi2venc2muxer
+	bool "mpp sample virvi2venc2muxer"
+	depends on mpp_sample
+	depends on mpp_muxer
+	depends on mpp_vi
+	depends on mpp_venc
+	help
+	  mpp sample virvi2venc2muxer.
+
+config mpp_sample_virvi2vo
+	bool "mpp sample virvi2vo"
+	depends on mpp_sample
+	depends on mpp_hw_display
+	depends on mpp_vo
+	depends on mpp_vi
+	help
+	  mpp sample virvi2vo.
+
+config mpp_sample_vo
+	bool "mpp sample vo"
+	depends on mpp_sample
+	depends on mpp_hw_display
+	depends on mpp_vo
+	help
+	  mpp sample vo.
+
+config mpp_sample_VideoResizer
+	bool "mpp sample VideoResizer"
+	depends on mpp_sample
+	depends on mpp_venc && mpp_vdec
+	help
+	  sample_VideoResizer is used to show how to decode and reencode video stream.
+
+# mpp uncommonly samples
+config mpp_uncommonly_samples
+	bool "mpp uncommonly samples"
+	depends on mpp_sample
+	help
+	  mpp uncommonly samples.
+
+config mpp_sample_adec
+	bool "mpp sample adec"
+	depends on mpp_uncommonly_samples
+	depends on mpp_adec
+	help
+	  mpp sample adec.
+
+config mpp_sample_adec2ao
+	bool "mpp sample adec2ao"
+	depends on mpp_uncommonly_samples
+	depends on mpp_adec
+	depends on mpp_aio
+	help
+	  mpp sample adec2ao.
+
+config mpp_sample_ai2ao
+	bool "mpp sample ai2ao"
+	depends on mpp_uncommonly_samples
+	depends on mpp_aio
+	help
+	  mpp sample ai2ao.
+
+config mpp_sample_ao_resample_mixer
+	bool "mpp sample ao_resample_mixer"
+	depends on mpp_uncommonly_samples
+	depends on mpp_aio
+	help
+	  mpp sample ao resample mixer.
+
+config mpp_sample_ao2ai_aec
+	bool "mpp sample ao2ai_aec"
+	depends on mpp_uncommonly_samples
+	depends on mpp_aenc
+	depends on mpp_aio
+	help
+	  mpp sample ao2ai_aec.
+
+config mpp_sample_ao2ai_aec_rate_mixer
+	bool "mpp sample ao2ai_aec_rate_mixer"
+	depends on mpp_uncommonly_samples
+	depends on mpp_aenc
+	depends on mpp_aio
+	help
+	  mpp sample ao2ai_aec_rate_mixer.
+
+config mpp_sample_directIORead
+	bool "mpp sample directIORead"
+	depends on mpp_uncommonly_samples
+	depends on mpp_fwrite_method_directIO
+	help
+	  mpp sample directIORead test directIO read and write.
+
+config mpp_sample_hello
+	bool "mpp sample hello"
+	depends on mpp_uncommonly_samples
+	help
+	  mpp sample hello.
+
+config mpp_sample_isposd
+	bool "mpp sample isposd"
+	depends on mpp_uncommonly_samples
+	depends on mpp_system_rgb_ctrl
+	help
+	  mpp sample isposd.
+
+config mpp_sample_motor
+	bool "mpp sample motor"
+	depends on mpp_uncommonly_samples
+	help
+	  mpp sample motor.
+
+config mpp_sample_pthread_cancel
+	bool "mpp sample pthread_cancel"
+	depends on mpp_uncommonly_samples
+	help
+	  mpp sample pthread_cancel.
+
+config mpp_sample_venc2muxer
+	bool "mpp sample venc2muxer"
+	depends on mpp_uncommonly_samples
+	depends on mpp_muxer
+	depends on mpp_venc
+	help
+	  mpp sample venc2muxer.
+
+config mpp_sample_vencQpMap
+	bool "mpp sample vencQpMap"
+	depends on mpp_uncommonly_samples
+	depends on mpp_venc
+	help
+	  mpp sample vencQpMap.
+
+config mpp_sample_vencRecreate
+	bool "mpp sample vencRecreate"
+	depends on mpp_uncommonly_samples
+	depends on mpp_venc
+	depends on mpp_vi
+	help
+	  mpp sample vencRecreate.
+
+config mpp_sample_vi_g2d
+	bool "mpp sample vi_g2d"
+	depends on mpp_uncommonly_samples
+	depends on mpp_hw_display
+	depends on mpp_vo
+	depends on mpp_vi
+	help
+	  mpp sample vi_g2d.
+
+config mpp_sample_vi_reset
+	bool "mpp sample vi_reset"
+	depends on mpp_uncommonly_samples
+	depends on mpp_vi
+	help
+	  mpp sample vi_reset.
+
+config mpp_sample_vin_isp_test
+	bool "mpp sample vin_isp_test"
+	depends on mpp_uncommonly_samples
+	help
+	  mpp sample vin_isp_test.
+
+config mpp_sample_virvi2vencSync
+	bool "mpp sample virvi2vencSync"
+	depends on mpp_uncommonly_samples
+	depends on mpp_vi
+	depends on mpp_venc
+	help
+	  mpp sample virvi2vencSync.
+
+config mpp_sample_virvi2vo_zoom
+	bool "mpp sample virvi2vo zoom"
+	depends on mpp_uncommonly_samples
+	depends on mpp_hw_display
+	depends on mpp_vo
+	depends on mpp_vi
+	help
+	  mpp sample virvi2vo zoom.
+
+config mpp_sample_WebRtcAec
+	bool "mpp sample WebRtcAec"
+	depends on mpp_uncommonly_samples
+	depends on mpp_aec
+	depends on mpp_aec_libwebrtc
+	help
+	  sample_WebRtcAec is used to test WebRtcAec effect.
+
+config mpp_sample_UvoiceAec
+	bool "mpp sample UvoiceAec"
+	depends on mpp_uncommonly_samples
+	depends on mpp_aec
+	depends on mpp_aec_libuvoice
+	help
+	  sample_UvoiceAec is used to test UvoiceAec effect.
+
+endif
+

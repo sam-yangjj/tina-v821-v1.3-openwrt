@@ -1,0 +1,24 @@
+From 732b5934264235b28c7b8409e07c61c487d176b8 Mon Sep 17 00:00:00 2001
+From: xuwugang <xuwugang@allwinnertech.com>
+Date: Thu, 17 Apr 2025 21:08:11 +0800
+Subject: [PATCH] fix disconnect failed bug
+
+---
+ src/rws_socketpriv.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/rws_socketpriv.c b/src/rws_socketpriv.c
+index 280b6b4..510dba3 100644
+--- a/src/rws_socketpriv.c
++++ b/src/rws_socketpriv.c
+@@ -849,6 +849,7 @@ void rws_socket_delete_all_frames_in_list(_rws_list * list_with_frames) {
+ 			rws_frame_delete(frame);
+ 		}
+ 		cur->value.object = NULL;
++		cur = cur->next;
+ 	}
+ }
+ 
+-- 
+2.29.0
+

@@ -1,0 +1,13 @@
+config GLIBC_VERSION_2_33
+	default y if GLIBC_USE_VERSION_2_33
+	bool
+
+config GLIBC_VERSION_2_37
+	default y if GLIBC_USE_VERSION_2_37
+	bool
+
+config GLIBC_VERSION
+	string
+	default "2.37"	if GLIBC_USE_VERSION_2_37
+	default "2.33"
+

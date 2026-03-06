@@ -1,0 +1,10 @@
+if PACKAGE_rt_media
+
+config rt_media_venc_param_debug
+	bool "support rt-media venc param debug"
+	default n
+	depends on PACKAGE_rt_media
+	help
+	  rt-media support rt-media venc param debug.
+
+endif

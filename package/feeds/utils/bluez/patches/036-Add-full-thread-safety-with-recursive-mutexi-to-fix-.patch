@@ -1,0 +1,223 @@
+From 0dc1fca62c97186dae1f02cddf50f30c65dd4f28 Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Thu, 23 Oct 2025 19:00:19 +0800
+Subject: [PATCH] Add full thread-safety with recursive mutexi to fix crash
+ problems
+
+---
+ src/shared/queue.c | 129 ++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 103 insertions(+), 26 deletions(-)
+
+diff --git a/src/shared/queue.c b/src/shared/queue.c
+index c61f19e..3819e23 100644
+--- a/src/shared/queue.c
++++ b/src/shared/queue.c
+@@ -202,15 +202,11 @@ bool queue_push_after(struct queue *queue, void *entry, void *data)
+ 	new_entry = queue_entry_new(data);
+ 
+ 	new_entry->next = qentry->next;
++	qentry->next = new_entry;
+ 
+-	if (!qentry->next) {
++	if (!qentry->next)
+ 		queue->tail = new_entry;
+-#ifdef QUEUE_SIMPLE_THREAD_SAFE
+-		queue_mutex_unlock(queue);
+-#endif
+-	}
+ 
+-	qentry->next = new_entry;
+ 	queue->entries++;
+ #ifdef QUEUE_SIMPLE_THREAD_SAFE
+ 	queue_mutex_unlock(queue);
+@@ -249,10 +245,23 @@ void *queue_pop_head(struct queue *queue)
+ 
+ void *queue_peek_head(struct queue *queue)
+ {
+-	if (!queue || !queue->head)
++	void *data = NULL;
++
++	if (!queue)
+ 		return NULL;
+ 
+-	return queue->head->data;
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_lock(queue);
++#endif
++
++	if (queue->head)
++		data = queue->head->data;
++
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_unlock(queue);
++#endif
++
++	return data;
+ }
+ 
+ void *queue_peek_tail(struct queue *queue)
+@@ -264,31 +273,51 @@ void *queue_peek_tail(struct queue *queue)
+ }
+ 
+ void queue_foreach(struct queue *queue, queue_foreach_func_t function,
+-							void *user_data)
++				void *user_data)
+ {
++	void **data_array = NULL;
++	unsigned int count = 0;
+ 	struct queue_entry *entry;
++	unsigned int i;
+ 
+ 	if (!queue || !function)
+ 		return;
+ 
+-	entry = queue->head;
+-	if (!entry)
+-		return;
+ #ifdef QUEUE_SIMPLE_THREAD_SAFE
+ 	queue_mutex_lock(queue);
+ #endif
+-	queue_ref(queue);
+-	while (entry && queue->head && queue->ref_count > 1) {
+-		struct queue_entry *next;
+ 
+-		next = entry->next;
+-		function(entry->data, user_data);
+-		entry = next;
++	count = queue->entries;
++	if (count == 0) {
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++		queue_mutex_unlock(queue);
++#endif
++		return;
+ 	}
+-	queue_unref(queue);
++
++	data_array = malloc(sizeof(void*) * count);
++	if (!data_array) {
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++		queue_mutex_unlock(queue);
++#endif
++		return;
++	}
++
++	i = 0;
++	for (entry = queue->head; entry && i < count; entry = entry->next) {
++		data_array[i++] = entry->data;
++	}
++	count = i;
++
+ #ifdef QUEUE_SIMPLE_THREAD_SAFE
+ 	queue_mutex_unlock(queue);
+ #endif
++
++	for (i = 0; i < count; i++) {
++		function(data_array[i], user_data);
++	}
++
++	free(data_array);
+ }
+ 
+ static bool direct_match(const void *a, const void *b)
+@@ -300,6 +329,7 @@ void *queue_find(struct queue *queue, queue_match_func_t function,
+ 							const void *match_data)
+ {
+ 	struct queue_entry *entry;
++	void *result = NULL;
+ 
+ 	if (!queue)
+ 		return NULL;
+@@ -307,11 +337,22 @@ void *queue_find(struct queue *queue, queue_match_func_t function,
+ 	if (!function)
+ 		function = direct_match;
+ 
+-	for (entry = queue->head; entry; entry = entry->next)
+-		if (function(entry->data, match_data))
+-			return entry->data;
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_lock(queue);
++#endif
++
++	for (entry = queue->head; entry; entry = entry->next) {
++		if (function(entry->data, match_data)) {
++			result = entry->data;
++			break;
++		}
++	}
+ 
+-	return NULL;
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_unlock(queue);
++#endif
++
++	return result;
+ }
+ 
+ bool queue_remove(struct queue *queue, void *data)
+@@ -448,24 +489,60 @@ unsigned int queue_remove_all(struct queue *queue, queue_match_func_t function,
+ 
+ const struct queue_entry *queue_get_entries(struct queue *queue)
+ {
++	const struct queue_entry *head = NULL;
++
+ 	if (!queue)
+ 		return NULL;
+ 
+-	return queue->head;
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_lock(queue);
++#endif
++
++	head = queue->head;
++
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_unlock(queue);
++#endif
++
++	return head;
+ }
+ 
+ unsigned int queue_length(struct queue *queue)
+ {
++	unsigned int len = 0;
++
+ 	if (!queue)
+ 		return 0;
+ 
+-	return queue->entries;
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_lock(queue);
++#endif
++
++	len = queue->entries;
++
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_unlock(queue);
++#endif
++
++	return len;
+ }
+ 
+ bool queue_isempty(struct queue *queue)
+ {
++	bool empty = true;
++
+ 	if (!queue)
+ 		return true;
+ 
+-	return queue->entries == 0;
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_lock(queue);
++#endif
++
++	empty = (queue->entries == 0);
++
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_unlock(queue);
++#endif
++
++	return empty;
+ }
+-- 
+2.25.1
+

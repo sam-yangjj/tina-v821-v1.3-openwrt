@@ -1,0 +1,79 @@
+From a29c81fcb48e2df3cc047bfbe44b290760d7dbe6 Mon Sep 17 00:00:00 2001
+From: xuwugang <xuwugang@allwinnertech.com>
+Date: Wed, 11 Jun 2025 13:28:50 +0800
+Subject: [PATCH] fix(src): fix the transmission crash bug that occurs when
+ WiFi disconnects
+
+---
+ src/rws_socketpriv.c | 19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/src/rws_socketpriv.c b/src/rws_socketpriv.c
+index 510dba3..b61d422 100644
+--- a/src/rws_socketpriv.c
++++ b/src/rws_socketpriv.c
+@@ -95,6 +95,9 @@ void *port_ssl_open(rws_socket_t sock, char *host)
+ 
+ void port_ssl_close(void *_session)
+ {
++	if (_session == NULL)
++		return ;
++
+ 	ssl_session_t *session = (ssl_session_t *)_session;
+ 
+ 	SSL *ssl = session->ssl;
+@@ -112,6 +115,9 @@ int port_ssl_write(void *_session, const char *data, size_t data_size)
+ {
+ 	int bytes_sent = 0;
+ 
++	if (_session == NULL)
++		return -1;
++
+ 	ssl_session_t *session = (ssl_session_t *)_session;
+ 
+ 	SSL *ssl = session->ssl;
+@@ -125,6 +131,9 @@ int port_ssl_read(void *_session, char *buff, size_t read_bytes)
+ {
+ 	int bytes_received = 0;
+ 
++	if (_session == NULL)
++		return -1;
++
+ 	ssl_session_t *session = (ssl_session_t *)_session;
+ 
+ 	SSL *ssl = session->ssl;
+@@ -252,10 +261,14 @@ rws_bool rws_socket_send(_rws_socket * s, const void * data, const size_t data_s
+ 	int sended = -1, error_number = -1;
+ 	rws_error_delete_clean(&s->error);
+ 
+-	//errno = -1;
++	if (s->socket == RWS_INVALID_SOCKET)
++		return rws_false;
++
++	errno = 0;
+ #if RWS_SUPPORT_SSL
+ 	if (s->use_ssl) {
+ 		sended = port_ssl_write(s->ssl_session, data, data_size);
++		error_number = errno;
+ 	} else {
+ #endif
+ #if defined(RWS_OS_WINDOWS)
+@@ -910,11 +923,15 @@ void rws_socket_check_write_error(_rws_socket * s, int error_num) {
+ 		case EPIPE: // The local end has been shut down on a connection oriented socket
+ 		// recv errors
+ 		case ECONNREFUSED: // A remote host refused to allow the network connection (typically because it is not running the requested service).
++		case ENETUNREACH: // Network is unreachable
+ 
+ 			s->error = rws_error_new_code_descr(rws_error_code_read_write_socket, rws_strerror(code));
+ 			break;
+ 
+ 		default:
++			if (error_num && error_num != EAGAIN && error_num != EWOULDBLOCK) {
++				s->error = rws_error_new_code_descr(rws_error_code_read_write_socket, rws_strerror(code));
++			}
+ 			break;
+ 	}
+ }
+-- 
+2.29.0
+

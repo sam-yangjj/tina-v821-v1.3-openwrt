@@ -1,0 +1,22 @@
+TARGET = libpostequal.so
+
+SRCS = $(wildcard *.c)
+
+override CFLAGS += -D_GNU_SOURCE
+override INCLUDES += -I./ -I./include
+override LDFLAGS += -lpthread -lrpbuf -lasound -laactd
+
+all: $(TARGET) install
+
+$(TARGET): $(SRCS)
+	$(CC) $^ $(CFLAGS) $(INCLUDES) $(LDFLAGS) -fPIC -shared -o $@
+
+install:
+	mkdir -p $(INSTALL_PREFIX)/usr/lib
+	cp $(TARGET) $(INSTALL_PREFIX)/usr/lib
+	mkdir -p $(INSTALL_PREFIX)/usr/include
+	cp -r ./include/* $(INSTALL_PREFIX)/usr/include
+clean:
+	rm -rf $(TARGET)
+
+.PHONY: all clean install

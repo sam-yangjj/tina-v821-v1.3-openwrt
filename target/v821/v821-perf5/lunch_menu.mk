@@ -1,0 +1,7 @@
+BOOT_MEDIUM:="SPI NOR"
+BOOT_TYPE:=NORMAL
+SUPPORT_BOOT_MEDIUM:="SPI NOR/SPI NAND/SDCard/eMMC"
+HARDWARE_NAME:="V821BD2-WXX_PER5_4L"
+NETWORK:="Integrated WIFI"
+APPLICATION:="IPC, Dev Board, CDR, Doorlock, RGB888"
+URL:="docs.aw-ol.com/docs/soc/v821/hardware/3rd_hardware/perf5"

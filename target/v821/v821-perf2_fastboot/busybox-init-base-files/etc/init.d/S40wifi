@@ -1,0 +1,72 @@
+#!/bin/sh
+#
+# Load wifi modules....
+#
+
+MODULES_DIR="/lib/modules/`uname -r`"
+
+start() {
+	printf "Load wifi modules\n"
+	# to make sure rots decompress ready and then insmod wifi ko
+	fgrep -sq running /sys/class/remoteproc/remoteproc0/state || {
+		echo start > /sys/class/remoteproc/remoteproc0/state
+	}
+
+	[ -f $MODULES_DIR/v821_fmac.ko ] &&  {
+		lsmod | grep -q 'v821_fmac' || insmod $MODULES_DIR/v821_fmac.ko
+	}
+
+	[ ! -f $MODULES_DIR/v821_fmac.ko ] && [ -f $MODULES_DIR/v821_smac.ko ] && {
+		lsmod | grep -q 'v821_smac' || insmod $MODULES_DIR/v821_smac.ko
+	}
+
+	[ -f $MODULES_DIR/wireless_switch.ko ] &&  {
+		lsmod | grep -q 'wireless_switch' || insmod $MODULES_DIR/wireless_switch.ko
+	}
+
+	[ -f $MODULES_DIR/xr819s.ko ] &&  {
+		lsmod | grep -q 'xr819s' || insmod $MODULES_DIR/xr819s.ko
+	}
+
+	[ -f $MODULES_DIR/aic8800_bsp.ko ] &&  {
+		lsmod | grep -q 'aic8800_bsp' || insmod $MODULES_DIR/aic8800_bsp.ko
+	}
+
+	[ -f $MODULES_DIR/aic8800_btlpm.ko ] &&  {
+		lsmod | grep -q 'aic8800_btlpm' || insmod $MODULES_DIR/aic8800_btlpm.ko
+	}
+
+	[ -f $MODULES_DIR/aic8800_fdrv.ko ] &&  {
+		lsmod | grep -q 'aic8800_fdrv' || insmod $MODULES_DIR/aic8800_fdrv.ko
+	}
+}
+
+stop() {
+	printf "Unload wifi modules\n"
+
+	[ -f $MODULES_DIR/v821_fmac.ko ] && rmmod $MODULES_DIR/v821_fmac.ko
+	[ -f $MODULES_DIR/v821_smac.ko ] && rmmod $MODULES_DIR/v821_smac.ko
+	[ -f $MODULES_DIR/wireless_switch.ko ] && rmmod $MODULES_DIR/wireless_switch.ko
+	[ -f $MODULES_DIR/xr819s.ko ] && rmmod $MODULES_DIR/xr819s.ko
+	[ -f $MODULES_DIR/aic8800_fdrv.ko ] && rmmod $MODULES_DIR/aic8800_fdrv.ko
+	[ -f $MODULES_DIR/aic8800_btlpm.ko ] && rmmod $MODULES_DIR/aic8800_btlpm.ko
+	[ -f $MODULES_DIR/aic8800_bsp.ko ] && rmmod $MODULES_DIR/aic8800_bsp.ko
+}
+
+case "$1" in
+	start)
+	start
+	;;
+	stop)
+	stop
+	;;
+	restart|reload)
+	stop
+	start
+	;;
+*)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?

@@ -1,0 +1,47 @@
+#!/bin/sh
+#
+# Load mpp modules....
+#
+
+MODULES_DIR="/lib/modules/`uname -r`"
+
+start() {
+    printf "---try mount /dev/by-name/private---\n"
+    if [ -b /dev/by-name/private ]; then
+        mkdir -p /tmp/private/
+        mount -t vfat /dev/by-name/private /tmp/private/
+        if [ -f /tmp/private/ULI/factory/wifi_mac.txt ]; then
+            local wifi_mac=$(cat /tmp/private/ULI/factory/wifi_mac.txt)
+            echo ${wifi_mac} > /sys/class/addr_mgt/addr_wifi
+        fi
+    fi
+
+    printf "Load mpp modules\n"
+#    echo export LD_LIBRARY_PATH=/usr/lib/eyesee-mpp:/usr/lib/pdet:${LD_LIBRARY_PATH} >> /etc/profile
+
+}
+
+stop() {
+    printf "Unload mpp modules\n"
+
+    [ -f $MODULES_DIR/v821_fmac.ko ] && rmmod $MODULES_DIR/v821_fmac.ko
+    [ -f $MODULES_DIR/v821_smac.ko ] && rmmod $MODULES_DIR/v821_smac.ko
+}
+
+case "$1" in
+    start)
+	start
+	;;
+    stop)
+	stop
+	;;
+    restart|reload)
+	stop
+	start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?

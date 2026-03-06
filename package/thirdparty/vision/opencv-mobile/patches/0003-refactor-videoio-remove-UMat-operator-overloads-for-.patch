@@ -1,0 +1,76 @@
+From 242b6767c6ad856717603d5ba4c9384e6b1de1fd Mon Sep 17 00:00:00 2001
+From: zhangyuanjing <zhangyuanjing@allwinnertech.com>
+Date: Thu, 20 Nov 2025 13:46:56 +0800
+Subject: [PATCH] refactor(videoio): remove UMat operator overloads for
+ VideoCapture and VideoWriter
+
+The UMat operator overloads were redundant as the functionality is already covered by the read() and write() methods. This simplifies the API surface and reduces maintenance overhead.
+---
+ modules/videoio/include/opencv2/videoio.hpp | 10 ----------
+ modules/videoio/src/cap.cpp                 | 15 ---------------
+ 2 files changed, 25 deletions(-)
+
+diff --git a/modules/videoio/include/opencv2/videoio.hpp b/modules/videoio/include/opencv2/videoio.hpp
+index bdda38e..a94fceb 100644
+--- a/modules/videoio/include/opencv2/videoio.hpp
++++ b/modules/videoio/include/opencv2/videoio.hpp
+@@ -958,11 +958,6 @@ public:
+     */
+     virtual VideoCapture& operator >> (CV_OUT Mat& image);
+ 
+-    /** @overload
+-    @sa read()
+-    */
+-    virtual VideoCapture& operator >> (CV_OUT UMat& image);
+-
+     /** @brief Grabs, decodes and returns the next video frame.
+ 
+     @param [out] image the video frame is returned here. If no frames has been grabbed the image will be empty.
+@@ -1175,11 +1170,6 @@ public:
+     */
+     virtual VideoWriter& operator << (const Mat& image);
+ 
+-    /** @overload
+-    @sa write
+-    */
+-    virtual VideoWriter& operator << (const UMat& image);
+-
+     /** @brief Writes the next video frame
+ 
+     @param image The written frame. In general, color images are expected in BGR format.
+diff --git a/modules/videoio/src/cap.cpp b/modules/videoio/src/cap.cpp
+index 97f5736..685300e 100644
+--- a/modules/videoio/src/cap.cpp
++++ b/modules/videoio/src/cap.cpp
+@@ -592,14 +592,6 @@ VideoCapture& VideoCapture::operator >> (Mat& image)
+     return *this;
+ }
+ 
+-VideoCapture& VideoCapture::operator >> (UMat& image)
+-{
+-    CV_INSTRUMENT_REGION();
+-
+-    read(image);
+-    return *this;
+-}
+-
+ bool VideoCapture::set(int propId, double value)
+ {
+     CV_CheckNE(propId, (int)CAP_PROP_BACKEND, "Can't set read-only property");
+@@ -883,13 +875,6 @@ VideoWriter& VideoWriter::operator << (const Mat& image)
+     return *this;
+ }
+ 
+-VideoWriter& VideoWriter::operator << (const UMat& image)
+-{
+-    CV_INSTRUMENT_REGION();
+-    write(image);
+-    return *this;
+-}
+-
+ // FIXIT OpenCV 4.0: make inline
+ int VideoWriter::fourcc(char c1, char c2, char c3, char c4)
+ {
+-- 
+2.25.1
+

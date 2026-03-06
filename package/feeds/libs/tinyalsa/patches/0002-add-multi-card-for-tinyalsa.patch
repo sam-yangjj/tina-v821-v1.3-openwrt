@@ -1,0 +1,669 @@
+diff --git a/src/multi_pcm.c b/src/multi_pcm.c
+new file mode 100644
+index 0000000..c1c0577
+--- /dev/null
++++ b/src/multi_pcm.c
+@@ -0,0 +1,551 @@
++/*
++ * Copyright (C) Allwinner Tech All Rights Reserved
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include <errno.h>
++#include <inttypes.h>
++
++#define aw_info     printf
++#define aw_err      printf
++
++#define AW_MULTI_CARD_INDEX_START   (10)
++
++#define PCM_MULTI_CARD 0x00000010 /* use multi pcm */
++
++#define AW_MULTI_CARD_MAX   (4)
++#define AW_CHANNELS_MAX     (8)
++#define NS_PER_SEC          (1000000000LL)
++
++#define MULTI_CARD0     (0)
++#define MULTI_CARD1     (1)
++
++struct aw_card_info {
++    struct pcm_config pcm_config;
++    int card;
++    int device;
++    int flags;
++    int chmap[AW_CHANNELS_MAX];
++};
++
++struct aw_pcm_runtime {
++    struct pcm *pcm;
++    char *read_buffer;
++    int64_t tstamp;
++    int64_t tstamp_diff;
++    unsigned int hw_ptr;
++    unsigned int avail;
++};
++
++struct ch_areas {
++    struct aw_pcm_runtime *aw_pcm;
++    int in_ch;
++};
++
++struct aw_multi_card {
++    struct aw_card_info cards[AW_MULTI_CARD_MAX];
++    struct aw_pcm_runtime aw_pcm[AW_MULTI_CARD_MAX];
++    int card_num;
++    int use_mmap;
++    int use_tstamp;
++    int period_size;
++    int channels;
++    enum pcm_format format;
++    struct ch_areas chareas[AW_CHANNELS_MAX];
++};
++
++struct aw_multi_card *g_mc_info = NULL;
++
++static int multirecord_open(struct pcm *pcm);
++static int multirecord_close(void);
++static int multirecord_read(void *data, unsigned int count);
++static int multirecord_start(void);
++static int multirecord_stop(void);
++static unsigned int multirecord_pcm_frames_to_bytes(unsigned int frames);
++static unsigned int multirecord_pcm_bytes_to_frames(unsigned int bytes);
++
++struct aw_card_info cards[AW_MULTI_CARD_MAX];
++struct aw_pcm_runtime aw_pcm[AW_MULTI_CARD_MAX];
++int card_num;
++int use_mmap;
++int use_tstamp;
++int period_size;
++int channels;
++enum pcm_format format;
++struct ch_areas chareas[AW_CHANNELS_MAX];
++
++static struct aw_multi_card * multi_card_init(struct pcm *pcm)
++{
++    struct pcm_config *config;
++    struct aw_card_info *card0, *card1;
++    struct aw_multi_card *card_info = NULL;
++    int rate, channels, period_size, period_count;
++    enum pcm_format format;
++
++    if (g_mc_info != NULL) {
++        aw_err("already open multi card...\n");
++        return NULL;
++    }
++
++    rate = pcm->config.rate;
++    channels = pcm->config.channels;
++    period_size = pcm->config.period_size;
++    period_count = pcm->config.period_count;
++    format = pcm->config.format;
++
++    pcm->buffer_size = period_size * period_count;
++
++
++    if (channels < 3 || channels > 4) {
++        aw_err("multi card only support 3 or 4 channels\n");
++        return NULL;
++    }
++
++    card_info = calloc(1, sizeof(struct aw_multi_card));
++    if (!card_info)
++        return NULL;
++
++
++    card0 = &card_info->cards[0];
++    card1 = &card_info->cards[1];
++    card_info->card_num = 2;
++    card_info->use_mmap = 0;
++    card_info->use_tstamp = 0;
++    card_info->period_size = period_size;
++    card_info->channels = channels;
++
++    /* card0 */
++    card0->card = MULTI_CARD0;
++    card0->device = 0;
++    card0->flags = PCM_IN | PCM_MONOTONIC;
++    memset(card0->chmap, -1, sizeof(card0->chmap));
++    config = &card0->pcm_config;
++    memset(config, 0, sizeof(struct pcm_config));
++    config->format = format;
++    config->rate = rate;
++    config->channels = 2;
++    config->period_size = period_size;
++    config->period_count = period_count;
++    config->start_threshold = 0;
++    config->stop_threshold = config->period_size * config->period_count;
++    config->silence_threshold = 0;
++    card0->chmap[0] = 0;
++    card0->chmap[1] = 1;
++
++    /* card1 */
++    card1->card = MULTI_CARD1;
++    card1->device = 0;
++    card1->flags = PCM_IN | PCM_MONOTONIC;
++    memset(card1->chmap, -1, sizeof(card1->chmap));
++    config = &card1->pcm_config;
++    memset(config, 0, sizeof(struct pcm_config));
++    config->format = format;
++    config->rate = rate;
++    config->channels = channels - 2;
++    config->period_size = period_size;
++    config->period_count = period_count;
++    config->start_threshold = 0;
++    config->stop_threshold = config->period_size * config->period_count;
++    config->silence_threshold = 0;
++    card1->chmap[0] = 2;
++    if (channels == 4)
++        card1->chmap[1] = 3;
++
++    g_mc_info = card_info;
++    return g_mc_info;
++}
++
++static int multirecord_get_htimestamp(unsigned int *avail, struct timespec *tstamp)
++{
++    struct aw_multi_card *card_info = g_mc_info;
++    struct aw_pcm_runtime *aw_pcm;
++
++    aw_pcm = &card_info->aw_pcm[0];
++    return pcm_get_htimestamp(aw_pcm->pcm, avail, tstamp);
++}
++
++#if 0
++static int multirecord_is_ready(void)
++{
++    int i;
++    struct aw_multi_card *card_info = g_mc_info;
++
++    for (i = 0; i < card_info->card_num; i++) {
++        struct aw_pcm_runtime *aw_pcm;
++        aw_pcm = &card_info->aw_pcm[i];
++        if (!pcm_is_ready(aw_pcm->pcm))
++            return 0;
++    }
++    return 1;
++}
++#endif
++
++static int multirecord_open(struct pcm *pcm)
++{
++    int ret = 0, i;
++    struct aw_multi_card *card_info = NULL;
++
++    card_info = multi_card_init(pcm);
++    if (!card_info) {
++        aw_err("multi_card_init failed\n");
++        return -1;
++    }
++
++    for (i = 0; i < card_info->card_num; i++) {
++        struct aw_card_info *card;
++        struct aw_pcm_runtime *aw_pcm;
++        int flags = card_info->use_mmap ? (PCM_MMAP|PCM_NOIRQ) : 0;
++
++        card = &card_info->cards[i];
++        aw_pcm = &card_info->aw_pcm[i];
++        flags |= card->flags;
++        aw_pcm->pcm = pcm_open(card->card, card->device, flags, &card->pcm_config);
++        if (!aw_pcm->pcm || (aw_pcm->pcm != NULL && !pcm_is_ready(aw_pcm->pcm))) {
++            aw_err("open %d,%d fail\n", card->card, card->device);
++            ret = -EINVAL;
++            goto err;
++        }
++        aw_pcm->read_buffer = calloc(1, pcm_frames_to_bytes(aw_pcm->pcm, card->pcm_config.period_size));
++        if (!aw_pcm->read_buffer) {
++            aw_err("no memory\n");
++            ret = -ENOMEM;
++            goto err;
++        }
++        aw_info("open %d,%d success!\n", card->card, card->device);
++    }
++
++    for (i = 0; i < card_info->card_num; i++) {
++        struct aw_card_info *card;
++        int j;
++        card = &card_info->cards[i];
++        for (j = 0; j < AW_CHANNELS_MAX; j++) {
++            if (card->chmap[j] < 0)
++                break;
++            if (card_info->chareas[card->chmap[j]].aw_pcm != NULL) {
++                aw_err("line:%d chareas[%d] alread set!! discard %d,%d ch%d\n",
++                    __LINE__, card->chmap[j], card->card, card->device, j);
++            }
++            card_info->chareas[card->chmap[j]].aw_pcm = &card_info->aw_pcm[i];
++            card_info->chareas[card->chmap[j]].in_ch = j;
++        }
++    }
++#if 1
++    /* list channal map */
++    for (i = 0; i < AW_CHANNELS_MAX; i++) {
++        aw_info("channel[%d]: in_ch=%d, aw_pcm=%p\n",
++                i, card_info->chareas[i].in_ch, card_info->chareas[i].aw_pcm);
++    }
++#endif
++    ret = multirecord_start();
++
++    return ret;
++err:
++    multirecord_close();
++    return ret;
++}
++
++static int multirecord_start(void)
++{
++    int ret = 0, i;
++    struct aw_multi_card *card_info = g_mc_info;
++
++    /* ensure prepare multi card prepare state */
++    for (i = 0; i < card_info->card_num; i++) {
++        struct aw_pcm_runtime *aw_pcm;
++        aw_pcm = &card_info->aw_pcm[i];
++        pcm_prepare(aw_pcm->pcm);
++    }
++
++    for (i = 0; i < card_info->card_num; i++) {
++        struct aw_card_info *card;
++        struct aw_pcm_runtime *aw_pcm;
++
++        card = &card_info->cards[i];
++        aw_pcm = &card_info->aw_pcm[i];
++        if (!aw_pcm->pcm) {
++            aw_err("%d,%d pcm is empty!\n", card->card, card->device);
++            continue;
++        }
++        ret = pcm_start(aw_pcm->pcm);
++        if (ret != 0) {
++            aw_err("%d,%d pcm start fail\n", card->card, card->device);
++            return ret;
++        }
++        aw_info("%d,%d pcm start success!\n", card->card, card->device);
++    }
++    return ret;
++}
++
++static int pcm_read_data_merge_16bit(struct aw_multi_card *card_info, char *data, unsigned int frames)
++{
++    /* only support 16bit now */
++    int i, j;
++    struct ch_areas *charea;
++    struct aw_pcm_runtime *aw_pcm;
++    unsigned int formatbytes = pcm_format_to_bits(card_info->format) / 8;
++    unsigned int framebytes = card_info->channels * formatbytes;
++    unsigned short *outBuf, *inBuf;
++
++    for (i = 0; i < card_info->channels ; i++) {
++            charea = &card_info->chareas[i];
++            aw_pcm = charea->aw_pcm;
++            for (j = 0; j < (int)frames; j++) {
++                outBuf = (unsigned short *)&data[j * framebytes + i * formatbytes];
++                inBuf = (unsigned short *)&aw_pcm->read_buffer[j * pcm_frames_to_bytes(aw_pcm->pcm, 1)
++                            + charea->in_ch * formatbytes];
++                *outBuf = *inBuf;
++            }
++    }
++    return 0;
++}
++
++static int pcm_read_data_merge_32bit(struct aw_multi_card *card_info, char *data, unsigned int frames)
++{
++    /* support 24/32bit now */
++    int i, j;
++    struct ch_areas *charea;
++    struct aw_pcm_runtime *aw_pcm;
++    unsigned int formatbytes = pcm_format_to_bits(card_info->format) / 8;
++    unsigned int framebytes = card_info->channels * formatbytes;
++    unsigned int *outBuf, *inBuf;
++    for (i = 0; i < card_info->channels ; i++) {
++            charea = &card_info->chareas[i];
++            aw_pcm = charea->aw_pcm;
++            for (j = 0; j < (int)frames; j++) {
++                outBuf = (unsigned int *)&data[j * framebytes + i * formatbytes];
++                inBuf = (unsigned int *)&aw_pcm->read_buffer[j * pcm_frames_to_bytes(aw_pcm->pcm, 1)
++                            + charea->in_ch * formatbytes];
++                *outBuf = *inBuf;
++            }
++    }
++    return 0;
++}
++
++static void tstamp_save(struct aw_pcm_runtime *aw_pcm, int is_mmap)
++{
++    int ret;
++    struct timespec timeval;
++    int64_t timestamp;
++
++    ret = pcm_get_htimestamp(aw_pcm->pcm, &aw_pcm->avail, &timeval);
++    if (ret != 0)
++        aw_err("is_mmap:%d, get tstamp info failed, return %d\n", is_mmap, ret);
++
++    timestamp = (int64_t)(timeval.tv_sec) * NS_PER_SEC + (int64_t)(timeval.tv_nsec);
++    aw_pcm->tstamp_diff = (aw_pcm->tstamp != (int64_t)0)? (timestamp - aw_pcm->tstamp) : (int64_t)0;
++    aw_pcm->tstamp = timestamp;
++}
++
++static void tstamp_print(struct aw_multi_card *card_info)
++{
++    int i;
++
++    for (i = 0; i < card_info->card_num; i++) {
++        struct aw_card_info *card;
++        struct aw_pcm_runtime *aw_pcm;
++
++        card = &card_info->cards[i];
++        aw_pcm = &card_info->aw_pcm[i];
++
++        aw_info("hw:%d,%d timestamp:%"PRId64" diff:%"PRId64" avail:%u\n",
++            card->card, card->device, aw_pcm->tstamp,
++            aw_pcm->tstamp_diff, aw_pcm->avail);
++    }
++    if (card_info->card_num != 2)
++        return;
++    aw_info("two card diff:%"PRId64"\n", card_info->aw_pcm[1].tstamp - card_info->aw_pcm[0].tstamp);
++}
++
++static int multirecord_read_frames(void *data, unsigned int frames)
++{
++    int ret = 0, i, frames_read = 0;
++    unsigned int format_bit, merge_frames = frames;
++    struct aw_multi_card *card_info = g_mc_info;
++
++
++    if (!frames)
++        return 0;
++    for (i = 0; i < card_info->card_num; i++) {
++        struct aw_card_info *card;
++        struct aw_pcm_runtime *aw_pcm;
++
++        card = &card_info->cards[i];
++        aw_pcm = &card_info->aw_pcm[i];
++
++        /*printf("mmap:%d, %d,%d read %d frames\n", card_info->use_mmap, card->card, card->device, frames);*/
++        if (card_info->use_mmap) {
++            ret = pcm_mmap_read(aw_pcm->pcm, aw_pcm->read_buffer, pcm_frames_to_bytes(aw_pcm->pcm, frames));
++            if (ret != 0) {
++                aw_err("%d,%d pcm read fail, return %d\n", card->card, card->device, ret);
++                ret = -1;
++                goto err;
++            }
++        } else {
++            frames_read = pcm_readi(aw_pcm->pcm, aw_pcm->read_buffer, frames);
++            if (frames_read < 0 || (unsigned int)frames_read > frames){
++                aw_err("%d,%d pcm_readi, want read %d real read %d\n", card->card, card->device, frames, frames_read);
++                ret = -1;
++                goto err;
++            }
++            if ((unsigned int)frames_read < frames) {
++                aw_info("%d,%d pcm_readi, want read %d real read %d\n", card->card, card->device, frames, frames_read);
++                merge_frames = frames_read;
++            }
++        }
++        if (card_info->use_tstamp)
++            tstamp_save(aw_pcm, card_info->use_mmap);
++    }
++
++    if (card_info->use_tstamp)
++        tstamp_print(card_info);
++
++
++    /* pcm data merge */
++    format_bit = pcm_format_to_bits(card_info->format);
++    if (format_bit == 16)
++        pcm_read_data_merge_16bit(card_info, data, merge_frames);
++    else if (format_bit == 32)
++        pcm_read_data_merge_32bit(card_info, data, merge_frames);
++    else
++        aw_err("do not support %u bit\n", format_bit);
++
++    return 0;
++err:
++    /* reset all pcm */
++    multirecord_stop();
++    multirecord_start();
++
++    return ret;
++}
++
++static int multirecord_read(void *data, unsigned int count)
++{
++    int ret = 0;
++    int total_frames, frames, frames_read = 0;
++    struct aw_multi_card *card_info = g_mc_info;
++    char *outBuf = data;
++    int retry = 3;
++
++    total_frames = count; //multirecord_pcm_bytes_to_frames(count);
++    frames = card_info->period_size;
++
++    /*aw_info("total bytes=%d, total_frames=%d\n", count, total_frames);*/
++    while (total_frames > 0) {
++        if (total_frames < card_info->period_size)
++            frames = total_frames;
++        ret = multirecord_read_frames(outBuf, frames);
++        if (ret != 0) {
++            if (retry-- > 0)
++                continue;
++            break;
++        }
++        total_frames -= frames;
++        frames_read += frames;
++        outBuf += multirecord_pcm_frames_to_bytes(frames);
++        /*aw_info("read %d bytes\n", multirecord_pcm_frames_to_bytes(frames));*/
++    }
++
++    if ((unsigned int)frames_read > count) {
++        aw_err("read frames %d total frames %d\n", frames_read, count);
++        return -1;
++    }
++
++    return frames_read;
++}
++
++static int multirecord_stop(void)
++{
++    int ret = 0, i;
++    struct aw_multi_card *card_info = g_mc_info;
++
++    for (i = 0; i < card_info->card_num; i++) {
++        struct aw_card_info *card;
++        struct aw_pcm_runtime *aw_pcm;
++
++        card = &card_info->cards[i];
++        aw_pcm = &card_info->aw_pcm[i];
++        if (!aw_pcm->pcm) {
++            aw_err("%d,%d pcm is empty!\n", card->card, card->device);
++            continue;
++        }
++        ret = pcm_stop(aw_pcm->pcm);
++        if (ret != 0) {
++            aw_err("%d,%d pcm stop fail\n", card->card, card->device);
++            return ret;
++        }
++        aw_info("%d,%d pcm stop success!\n", card->card, card->device);
++        pcm_prepare(aw_pcm->pcm);
++
++        aw_pcm->tstamp = (int64_t)0;
++        aw_pcm->tstamp_diff = (int64_t)0;
++        aw_pcm->hw_ptr = 0;
++        aw_pcm->avail = 0;
++    }
++    return ret;
++}
++
++static int multirecord_close()
++{
++    int i;
++    struct aw_multi_card *card_info = g_mc_info;
++
++    for (i = 0; i < card_info->card_num; i++) {
++        struct aw_card_info *card;
++        struct aw_pcm_runtime *aw_pcm;
++
++        card = &card_info->cards[i];
++        aw_pcm = &card_info->aw_pcm[i];
++        if (!aw_pcm->pcm)
++            continue;
++        pcm_close(aw_pcm->pcm);
++        aw_pcm->pcm = NULL;
++        if (aw_pcm->read_buffer) {
++            free(aw_pcm->read_buffer);
++            aw_pcm->read_buffer = NULL;
++        }
++        aw_info("close %d,%d success!\n", card->card, card->device);
++    }
++    free(g_mc_info);
++    g_mc_info = NULL;
++    return 0;
++}
++
++static unsigned int multirecord_pcm_frames_to_bytes(unsigned int frames)
++{
++    unsigned int framebytes;
++    struct aw_multi_card *card_info = g_mc_info;
++
++    framebytes = card_info->channels * pcm_format_to_bits(card_info->format) / 8;
++    return frames * framebytes;
++}
++
++static unsigned int multirecord_pcm_bytes_to_frames(unsigned int bytes)
++{
++    struct pcm_config *config;
++    int bits = 0, i;
++    unsigned int framebytes;
++    struct aw_multi_card *card_info = g_mc_info;
++
++    for (i = 0; i < card_info->card_num; i++) {
++        config = &card_info->cards[i].pcm_config;
++        bits += (config->channels * pcm_format_to_bits(config->format));
++    }
++    framebytes = bits/8;
++
++    return bytes / framebytes;
++}
+diff --git a/src/pcm.c b/src/pcm.c
+index ef38c9c..1dad683 100644
+--- a/src/pcm.c
++++ b/src/pcm.c
+@@ -225,6 +225,15 @@ struct pcm {
+     unsigned int subdevice;
+ };
+ 
++#include "multi_pcm.c"
++
++int pcm_is_multi_card(const struct pcm *pcm)
++{
++    if (pcm->flags & PCM_MULTI_CARD)
++        return 0;
++    return -1;
++}
++
+ static int oops(struct pcm *pcm, int e, const char *fmt, ...)
+ {
+     va_list ap;
+@@ -485,6 +494,8 @@ unsigned int pcm_format_to_bits(enum pcm_format format)
+  */
+ unsigned int pcm_bytes_to_frames(const struct pcm *pcm, unsigned int bytes)
+ {
++    if (!pcm_is_multi_card(pcm))
++        return multirecord_pcm_bytes_to_frames(bytes);
+     return bytes / (pcm->config.channels *
+         (pcm_format_to_bits(pcm->config.format) >> 3));
+ }
+@@ -497,6 +508,9 @@ unsigned int pcm_bytes_to_frames(const struct pcm *pcm, unsigned int bytes)
+  */
+ unsigned int pcm_frames_to_bytes(const struct pcm *pcm, unsigned int frames)
+ {
++    if (!pcm_is_multi_card(pcm))
++        return multirecord_pcm_frames_to_bytes(frames);
++
+     return frames * pcm->config.channels *
+         (pcm_format_to_bits(pcm->config.format) >> 3);
+ }
+@@ -630,6 +644,10 @@ int pcm_get_htimestamp(struct pcm *pcm, unsigned int *avail,
+     int rc;
+     snd_pcm_uframes_t hw_ptr;
+ 
++    if (!pcm_is_multi_card(pcm)) {
++        return multirecord_get_htimestamp(avail, tstamp);
++    }
++
+     if (!pcm_is_ready(pcm))
+         return -1;
+ 
+@@ -731,6 +749,10 @@ int pcm_readi(struct pcm *pcm, void *data, unsigned int frame_count)
+ {
+     struct snd_xferi x;
+ 
++    if (!pcm_is_multi_card(pcm)) {
++        return multirecord_read(data, frame_count);
++    }
++
+     if (!(pcm->flags & PCM_IN))
+         return -EINVAL;
+ #if UINT_MAX > TINYALSA_FRAMES_MAX
+@@ -986,6 +1008,10 @@ unsigned int pcm_params_get_max(const struct pcm_params *pcm_params,
+  */
+ int pcm_close(struct pcm *pcm)
+ {
++    if (!pcm_is_multi_card(pcm)) {
++        return multirecord_close();
++    }
++
+     if (pcm == &bad_pcm)
+         return 0;
+ 
+@@ -1069,6 +1095,13 @@ struct pcm *pcm_open(unsigned int card, unsigned int device,
+     if (!pcm)
+         return &bad_pcm;
+ 
++    pcm->config = *config;
++
++    if (card >= AW_MULTI_CARD_INDEX_START) {
++        multirecord_open(pcm);
++        pcm->flags |= PCM_MULTI_CARD;
++        return pcm;
++    }
+     snprintf(fn, sizeof(fn), "/dev/snd/pcmC%uD%u%c", card, device,
+              flags & PCM_IN ? 'c' : 'p');
+ 
+@@ -1190,7 +1223,13 @@ int pcm_prepare(struct pcm *pcm)
+  */
+ int pcm_start(struct pcm *pcm)
+ {
+-    int prepare_error = pcm_prepare(pcm);
++    int prepare_error;
++
++    if (!pcm_is_multi_card(pcm)) {
++        return multirecord_start();
++    }
++
++    prepare_error = pcm_prepare(pcm);
+     if (prepare_error)
+         return prepare_error;
+ 
+@@ -1211,6 +1250,10 @@ int pcm_start(struct pcm *pcm)
+  */
+ int pcm_stop(struct pcm *pcm)
+ {
++    if (!pcm_is_multi_card(pcm)) {
++        return multirecord_stop();
++    }
++
+     if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_DROP) < 0)
+         return oops(pcm, errno, "cannot stop channel");
+ 

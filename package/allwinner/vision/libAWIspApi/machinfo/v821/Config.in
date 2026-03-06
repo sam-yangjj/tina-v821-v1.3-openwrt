@@ -1,0 +1,155 @@
+menu "Select libisp configuration options"
+depends on PACKAGE_libAWIspApi
+
+choice
+	prompt "Select compile libisp to static or dynamic library"
+	depends on PACKAGE_libAWIspApi
+	default libisp_compile_static_lib
+
+config libisp_compile_static_lib
+	bool "compile static lib"
+	help
+	  compile static libs for libisp.
+
+config libisp_compile_dynamic_lib
+	bool "compile dynamic lib"
+	help
+	  compile dynamic lib for libisp.
+
+endchoice
+
+config libisp_build_libispapi
+	bool "libisp build and install libawispapi for 3rd apps"
+	depends on PACKAGE_libAWIspApi
+	default n
+	help
+	  libisp build and install libawispapi for 3rd apps
+
+config libisp_build_tunning_app
+	bool "libisp build awTuningApps (will not install to firmware)"
+	depends on PACKAGE_libAWIspApi
+	default n
+	help
+	  libisp build awTuningApp
+
+config libisp_support_fastboot
+	bool "libisp support fastboot"
+	depends on PACKAGE_libAWIspApi
+	default n
+	help
+	  libisp support fastboot.
+
+config libisp_software_tdm
+	bool "libisp support software tdm"
+	depends on PACKAGE_libAWIspApi
+	default n
+	help
+	  libisp support software tdm
+
+config libisp_enable_systrace
+	bool "libisp enable systrace"
+	depends on PACKAGE_libAWIspApi
+	default n
+	help
+	  libisp enable systrace
+
+config libisp_select_sensor
+	bool "Select ISP Sensor Tuning Config"
+	depends on PACKAGE_libAWIspApi
+	default y
+	help
+	  tell eyesee-mpp-middleware the used sensor type.
+	  multiple sensors can be selected in multiple mipi scenarios.
+
+config gc1084
+	bool "use sensor gc1084"
+	depends on libisp_select_sensor
+	default n
+	help
+	  gc1084 is for ipc.
+
+config imx258
+	bool "use sensor imx258"
+	depends on libisp_select_sensor
+	default n
+	help
+	  imx258 is for ipc.
+
+config gc2053
+	bool "use sensor gc2053"
+	depends on libisp_select_sensor
+	default y
+	help
+	  gc2053 is for ipc.
+
+config gc2083
+	bool "use sensor gc2083"
+	depends on libisp_select_sensor
+	default n
+	help
+	  gc2083 is for ipc.
+
+config gc4663
+	bool "use sensor gc4663"
+	depends on libisp_select_sensor
+	default n
+	help
+	  gc4663 is for ipc.
+
+config f37p
+	bool "use sensor f37p"
+	depends on libisp_select_sensor
+	default n
+	help
+	  f37p is for ipc.
+
+config sc2336
+	bool "use sensor sc2336"
+	depends on libisp_select_sensor
+	default n
+	help
+	  sc2336 is for ipc.
+
+config sp1405
+	bool "use sensor sp1405"
+	depends on libisp_select_sensor
+	default n
+	help
+	  sp1405 is for ipc.
+
+config sc3336
+	bool "use sensor sc3336"
+	depends on libisp_select_sensor
+	default n
+	help
+	  sc3336 is for ipc.
+
+config sc1346
+	bool "use sensor sc1346"
+	depends on libisp_select_sensor
+	default n
+	help
+	  sc1346 is for ipc.
+
+config sc200ai
+	bool "use sensor sc200ai"
+	depends on libisp_select_sensor
+	default n
+	help
+	  sc200ai is for ipc.
+
+config os02g10
+	bool "use sensor os02g10"
+	depends on libisp_select_sensor
+	default n
+	help
+	  os02g10 is for ipc.
+
+config bf2257cs
+	bool "use sensor bf2257cs"
+	depends on libisp_select_sensor
+	default n
+	help
+	  bf2257cs is for ipc.
+
+endmenu

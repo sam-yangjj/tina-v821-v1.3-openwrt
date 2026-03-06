@@ -1,0 +1,12 @@
+diff --git a/src/udev/mtd_probe/mtd_probe.h b/src/udev/mtd_probe/mtd_probe.h
+index d99be9a..cead374 100644
+--- a/src/udev/mtd_probe/mtd_probe.h
++++ b/src/udev/mtd_probe/mtd_probe.h
+@@ -20,6 +20,7 @@
+ #pragma once
+ 
+ #include <mtd/mtd-user.h>
++#include <stdint.h>
+ 
+ /* Full oob structure as written on the flash */
+ struct sm_oob {

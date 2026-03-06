@@ -1,0 +1,24 @@
+LOCAL_CFLAGS += -I../include -I.. -L.. -std=c++17 -Wno-attributes
+LOCAL_LDFLAGS = -ldmabufheap
+
+#SRCS += ${wildcard *.c}
+SRCS += dmabuf_heap_test.c
+OBJS = $(patsubst %.c, %.c.o, $(SRCS))
+TARGET = dmabuf_heap_test
+
+all:$(TARGET) install
+
+$(TARGET):$(OBJS)
+	$(CXX) $(CFLAGS) $(LDFLAGS) $(LOCAL_CFLAGS) $(LOCAL_LDFLAGS) -o $@ $^
+
+$(OBJS):%.c.o:%.c
+	$(CXX) $(CFLAGS) $(LDFLAGS) $(LOCAL_CFLAGS) $(LOCAL_LDFLAGS) -fpermissive -c $^ -o $@
+
+clean:
+	-rm -rf $(OBJS) $(TARGET)
+
+install:
+	-mkdir -p $(CONFIG_PREFIX)/usr/bin
+	-cp dmabuf_heap_test $(CONFIG_PREFIX)/usr/bin/
+
+.PHONY:all clean $(TARGET) install

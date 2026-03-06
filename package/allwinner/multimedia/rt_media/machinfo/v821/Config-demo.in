@@ -1,0 +1,102 @@
+if PACKAGE_rt_media-demo
+
+config rt_media_demo_compile_static
+	bool "force to compile static libs"
+	default n
+	depends on PACKAGE_rt_media-demo
+	help
+	  when compile rt-media demo, take precedence to link static libs.
+
+choice
+	prompt "select log tool for rt_media demos"
+	default rt_media_demo_log_use_printf
+
+config rt_media_demo_log_use_printf
+	bool "use printf() to log"
+	help
+	  using printf() can be compatible with all systems, but its function is very limited.
+
+config rt_media_demo_log_use_glog
+	bool "use glog library to log"
+	help
+	  using glog is recommended, but it depends on libglog.so
+endchoice
+
+config rt_media_demo_video_in
+	bool "build rt-media demo demo_video_in"
+	default y
+	depends on PACKAGE_rt_media-demo
+	help
+	  rt-media support demo_video_in demo.
+
+config rt_media_demo_encoder
+	bool "build rt-media demo demo_encoder"
+	default n
+	depends on PACKAGE_rt_media-demo
+	help
+	  rt-media support demo_encoder demo.
+
+config rt_media_demo_force_i_frame
+	bool "build rt-media demo demo_force_i_frame"
+	default n
+	depends on PACKAGE_rt_media-demo
+	help
+	  rt-media support demo_force_i_frame demo.
+
+config rt_media_demo_get_yuv
+	bool "build rt-media demo demo_get_yuv"
+	default n
+	depends on PACKAGE_rt_media-demo
+	help
+	  rt-media support demo_get_yuv demo.
+
+config rt_media_demo_isp_api
+	bool "build rt-media demo demo_isp_api"
+	default n
+	depends on PACKAGE_rt_media-demo
+	help
+	  rt-media support demo_isp_api demo.
+
+config rt_media_demo_motion_search
+	bool "build rt-media demo demo_motion_search"
+	default n
+	depends on PACKAGE_rt_media-demo
+	help
+	  rt-media support demo_motion_search demo.
+
+config rt_media_demo_orl
+	bool "build rt-media demo demo_orl"
+	default n
+	depends on PACKAGE_rt_media-demo
+	help
+	  rt-media support demo_orl demo.
+
+config rt_media_demo_osd
+	bool "build rt-media demo demo_osd"
+	default n
+	depends on PACKAGE_rt_media-demo
+	help
+	  rt-media support demo_osd demo.
+
+config rt_media_demo_reset_size
+	bool "build rt-media demo demo_reset_size"
+	default n
+	depends on PACKAGE_rt_media-demo
+	help
+	  rt-media support demo_reset_size demo.
+
+config rt_media_demo_roi
+	bool "build rt-media demo demo_roi"
+	default n
+	depends on PACKAGE_rt_media-demo
+	help
+	  rt-media support demo_roi demo.
+
+config rt_media_demo_pdet
+	bool "build rt-media demo demo_pdet"
+	default n
+	depends on PACKAGE_rt_media-demo
+	help
+	  rt-media support demp_pdet demo.
+
+endif

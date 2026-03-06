@@ -1,0 +1,106 @@
+From df7d3fa5002373f7f955219defc7d0bc794a5a6c Mon Sep 17 00:00:00 2001
+From: Marijn Suijten <marijns95@gmail.com>
+Date: Sat, 11 Jul 2020 13:50:31 +0200
+Subject: [PATCH] audio/avrcp: Always update transport volume regardless of
+ player
+
+`Volume` is a special property that not only exists on players but also
+on the transport (see org.bluez.MediaTransport1). A player is not
+attached when the controller does not support FEATURE_CATEGORY_1, which
+is common on headphones without media browsing capabilities.
+
+On such audio devices (headphones, in-ears and the like) Absolute Volume
+is not available unless an external player is registered
+(org.bluez.Media1.RegisterPlayer) and the device sends a volume event
+back after that to set a2dp->volume in transport.c to a valid value
+(causing volume_exists to finally return true).
+
+This [1] mail thread denoting the same issue has a solution to at least
+request capabilities from the controller, but the proposed player object
+is not created on category 2 devices. Any notifications received on
+AVRCP_EVENT_VOLUME_CHANGED (avrcp_volume_changed) that is subsequently
+registered, or handling the result of avrcp_set_volume in
+avrcp_handle_set_volume will be ignored unless said player is present.
+
+This issue is not addressed by adding a fake player but instead dealing
+with the fact that volume is "special" and available on the transport
+regardless of the existence of a player. This is confirmed in
+avrcp_get_capabilities_resp as well which requires a player to register
+any event except AVRCP_EVENT_VOLUME_CHANGED.
+
+The applied solution moves media_transport_update_device_volume out of
+the player and into avrcp_volume_changed/avrcp_handle_set_volume where
+it is unconditionally called. These functions are the only users of
+avrcp_player->set_volume.
+---
+ profiles/audio/avrcp.c | 12 ++++++++----
+ profiles/audio/media.c | 16 ----------------
+ 2 files changed, 8 insertions(+), 20 deletions(-)
+
+diff --git a/profiles/audio/avrcp.c b/profiles/audio/avrcp.c
+index e2428250e..1bf85041e 100644
+--- a/profiles/audio/avrcp.c
++++ b/profiles/audio/avrcp.c
+@@ -3625,12 +3625,13 @@ static void avrcp_volume_changed(struct avrcp *session,
+ 	struct avrcp_player *player = target_get_player(session);
+ 	uint8_t volume;
+ 
+-	if (!player)
+-		return;
+-
+ 	volume = pdu->params[1] & 0x7F;
+ 
+-	player->cb->set_volume(volume, session->dev, player->user_data);
++	/* Always attempt to update the transport volume */
++	media_transport_update_device_volume(session->dev, volume);
++
++	if (player)
++		player->cb->set_volume(volume, session->dev, player->user_data);
+ }
+ 
+ static void avrcp_status_changed(struct avrcp *session,
+@@ -4378,6 +4379,9 @@ static gboolean avrcp_handle_set_volume(struct avctp *conn, uint8_t code,
+ 
+ 	volume = pdu->params[0] & 0x7F;
+ 
++	/* Always attempt to update the transport volume */
++	media_transport_update_device_volume(session->dev, volume);
++
+ 	if (player != NULL)
+ 		player->cb->set_volume(volume, session->dev, player->user_data);
+ 
+diff --git a/profiles/audio/media.c b/profiles/audio/media.c
+index 993ecb3b3..a0173fdd4 100644
+--- a/profiles/audio/media.c
++++ b/profiles/audio/media.c
+@@ -1202,27 +1202,11 @@ static uint32_t get_duration(void *user_data)
+ static void set_volume(uint8_t volume, struct btd_device *dev, void *user_data)
+ {
+ 	struct media_player *mp = user_data;
+-	GSList *l;
+ 
+ 	if (mp->volume == volume)
+ 		return;
+ 
+ 	mp->volume = volume;
+-
+-	for (l = mp->adapter->endpoints; l; l = l->next) {
+-		struct media_endpoint *endpoint = l->data;
+-		struct media_transport *transport;
+-
+-		/* Volume is A2DP only */
+-		if (endpoint->sep == NULL)
+-			continue;
+-
+-		transport = find_device_transport(endpoint, dev);
+-		if (transport == NULL)
+-			continue;
+-
+-		media_transport_update_volume(transport, volume);
+-	}
+ }
+ 
+ static bool media_player_send(struct media_player *mp, const char *name)
+-- 
+2.29.0
+

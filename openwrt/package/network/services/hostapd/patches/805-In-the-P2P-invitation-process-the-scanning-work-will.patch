@@ -1,0 +1,49 @@
+From 172cbf1e4093e3efccabe655072a6a2653f54a6e Mon Sep 17 00:00:00 2001
+From: xuwugang <xuwugang@allwinnertech.com>
+Date: Fri, 30 May 2025 10:40:15 +0800
+Subject: [PATCH] In the P2P invitation process, the scanning work will first
+ try the social channel
+
+---
+ wpa_supplicant/scan.c | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
+ mode change 100644 => 100755 wpa_supplicant/scan.c
+
+diff --git a/wpa_supplicant/scan.c b/wpa_supplicant/scan.c
+old mode 100644
+new mode 100755
+index b475730..c8dcdf3
+--- a/wpa_supplicant/scan.c
++++ b/wpa_supplicant/scan.c
+@@ -420,13 +420,27 @@ static void wpa_supplicant_optimize_freqs(
+ 		 * Optimize scan based on GO information during persistent
+ 		 * group reinvocation
+ 		 */
+-		if (wpa_s->p2p_in_invitation < 5 &&
++		if (wpa_s->p2p_in_invitation < 3 &&
+ 		    wpa_s->p2p_invite_go_freq > 0) {
+ 			wpa_dbg(wpa_s, MSG_DEBUG, "P2P: Scan only GO preferred frequency %d MHz during invitation",
+ 				wpa_s->p2p_invite_go_freq);
+ 			params->freqs = os_calloc(2, sizeof(int));
+ 			if (params->freqs)
+ 				params->freqs[0] = wpa_s->p2p_invite_go_freq;
++		} else if (wpa_s->p2p_in_invitation >= 3 && wpa_s->p2p_in_invitation < 5) {
++			/* The social channel is considered to be channels 1, 6, and 11.
++			 * This may not be correct, but it is the case at present.
++			 * Scanning the social channel before scanning all channels
++			 * may speed up the connection.
++			 */
++			params->freqs = os_calloc(4, sizeof(int));
++			if (params->freqs) {
++				params->freqs[0] = 2412;
++				params->freqs[1] = 2437;
++				params->freqs[2] = 2462;
++				wpa_dbg(wpa_s, MSG_DEBUG, "P2P: Scan only GO preferred frequency %d %d %d MHz during invitation",
++						params->freqs[0], params->freqs[1], params->freqs[2]);
++			}
+ 		}
+ 		wpa_s->p2p_in_invitation++;
+ 		if (wpa_s->p2p_in_invitation > 20) {
+-- 
+2.29.0
+

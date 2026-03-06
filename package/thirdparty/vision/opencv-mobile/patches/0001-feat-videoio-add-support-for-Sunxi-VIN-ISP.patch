@@ -1,0 +1,301 @@
+From d842f7873f93514960ab678077e34b734329bdb1 Mon Sep 17 00:00:00 2001
+From: zhangyuanjing <zhangyuanjing@allwinnertech.com>
+Date: Thu, 20 Nov 2025 12:08:10 +0800
+Subject: [PATCH] feat(videoio): add support for Sunxi VIN ISP
+
+- Add VINISP backend detection and configuration in CMake
+- Implement Sunxi VIN ISP support in V4L2 capture
+- Add necessary headers and flags for Sunxi VIN ISP integration
+- Handle raw sensor type detection and ISP control
+---
+ CMakeLists.txt                            |  12 +++
+ modules/videoio/CMakeLists.txt            |   5 ++
+ modules/videoio/cmake/detect_vinisp.cmake |  13 +++
+ modules/videoio/cmake/init.cmake          |   1 +
+ modules/videoio/src/cap_v4l.cpp           | 102 ++++++++++++++++++++--
+ 5 files changed, 128 insertions(+), 5 deletions(-)
+ create mode 100644 modules/videoio/cmake/detect_vinisp.cmake
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 03a1804..5b820ca 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -366,6 +366,9 @@ OCV_OPTION(WITH_TIFF "Include TIFF support" ON
+ OCV_OPTION(WITH_V4L "Include Video 4 Linux support" ON
+   VISIBLE_IF UNIX AND NOT ANDROID AND NOT APPLE
+   VERIFY HAVE_CAMV4L OR HAVE_CAMV4L2 OR HAVE_VIDEOIO)
++OCV_OPTION(WITH_VINISP "Include Sunxi VIN ISP Support" ON
++  VISIBLE_IF ENABLE_SUNXIVINISP
++  VERIFY HAVE_VINISP)
+ OCV_OPTION(WITH_DSHOW "Build VideoIO with DirectShow support" ON
+   VISIBLE_IF WIN32 AND NOT ARM AND NOT WINRT
+   VERIFY HAVE_DSHOW)
+@@ -553,6 +556,8 @@ OCV_OPTION(ENABLE_CUDA_FIRST_CLASS_LANGUAGE "Enable CUDA as a first class langua
+ OCV_OPTION(ENABLE_PYLINT              "Add target with Pylint checks"                            (BUILD_DOCS OR BUILD_EXAMPLES) IF (NOT CMAKE_CROSSCOMPILING AND NOT APPLE_FRAMEWORK) )
+ OCV_OPTION(ENABLE_FLAKE8              "Add target with Python flake8 checker"                    (BUILD_DOCS OR BUILD_EXAMPLES) IF (NOT CMAKE_CROSSCOMPILING AND NOT APPLE_FRAMEWORK) )
+ 
++OCV_OPTION(ENABLE_SUNXIVINISP         "Enable Sunxi VIN ISP Server" OFF)
++
+ if(ENABLE_IMPL_COLLECTION)
+   add_definitions(-DCV_COLLECT_IMPL_DATA)
+ endif()
+@@ -1647,6 +1652,13 @@ if(WITH_V4L OR HAVE_V4L)
+   status("    v4l/v4l2:" HAVE_V4L THEN "YES (${v4l_status})" ELSE NO)
+ endif()
+ 
++if(WITH_VINISP OR HAVE_VINISP)
++  ocv_build_features_string(vinisp_status
++    IF HAVE_VINISP THEN "AWIspApi.h"
++    ELSE "NO")
++  status("    sunxi/vin:" HAVE_VINISP THEN "YES (${vinisp_status})" ELSE NO)
++endif()
++
+ if(WITH_DSHOW OR HAVE_DSHOW)
+   status("    DirectShow:" HAVE_DSHOW THEN YES ELSE NO)
+ endif()
+diff --git a/modules/videoio/CMakeLists.txt b/modules/videoio/CMakeLists.txt
+index c8a03e7..3a71442 100644
+--- a/modules/videoio/CMakeLists.txt
++++ b/modules/videoio/CMakeLists.txt
+@@ -287,6 +287,11 @@ endif()
+ 
+ ocv_target_link_libraries(${the_module} LINK_PRIVATE ${tgts})
+ 
++if(TARGET ocv.3rdparty.vinisp)
++  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_SUNXI_VIN_ISP")
++  ocv_target_link_libraries(${the_module} LINK_PRIVATE m AWIspApi)
++endif()
++
+ # copy FFmpeg dll to the output folder
+ if(WIN32 AND HAVE_FFMPEG_WRAPPER)
+   if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+diff --git a/modules/videoio/cmake/detect_vinisp.cmake b/modules/videoio/cmake/detect_vinisp.cmake
+new file mode 100644
+index 0000000..6bc8054
+--- /dev/null
++++ b/modules/videoio/cmake/detect_vinisp.cmake
+@@ -0,0 +1,13 @@
++# --- VINISP ---
++if(NOT HAVE_VINISP)
++  set(CMAKE_REQUIRED_QUIET TRUE) # for check_include_file
++  check_include_file(AWIspApi.h HAVE_VINISP)
++  if(HAVE_VINISP)
++    set(HAVE_VINISP TRUE)
++    set(defs)
++    list(APPEND defs "HAVE_VINISP")
++    ocv_add_external_target(vinisp "" "" "${defs}")
++  endif()
++endif()
++
++set(HAVE_VINISP ${HAVE_VINISP} PARENT_SCOPE)
+diff --git a/modules/videoio/cmake/init.cmake b/modules/videoio/cmake/init.cmake
+index 2237b97..a81e462 100644
+--- a/modules/videoio/cmake/init.cmake
++++ b/modules/videoio/cmake/init.cmake
+@@ -11,6 +11,7 @@ endmacro()
+ add_backend("ffmpeg" WITH_FFMPEG)
+ add_backend("gstreamer" WITH_GSTREAMER)
+ add_backend("v4l" WITH_V4L)
++add_backend("vinisp" WITH_VINISP)
+ 
+ add_backend("aravis" WITH_ARAVIS)
+ add_backend("dc1394" WITH_1394)
+diff --git a/modules/videoio/src/cap_v4l.cpp b/modules/videoio/src/cap_v4l.cpp
+index 9450f85..342002b 100644
+--- a/modules/videoio/src/cap_v4l.cpp
++++ b/modules/videoio/src/cap_v4l.cpp
+@@ -236,6 +236,11 @@ make & enjoy!
+ #include <sys/videoio.h>
+ #endif
+ 
++#ifdef HAVE_SUNXI_VIN_ISP
++#include <media/sunxi_camera_v2.h>
++#include <AWIspApi.h>
++#endif
++
+ #ifdef __OpenBSD__
+ typedef uint32_t __u32;
+ #endif
+@@ -441,6 +446,14 @@ struct CvCaptureCAM_V4L CV_FINAL : public IVideoCapture
+     void convertToRgb(const Buffer &currentBuffer);
+ 
+     bool havePendingFrame;  // true if next .grab() should be noop, .retrieve() resets this flag
++
++#ifdef HAVE_SUNXI_VIN_ISP
++    /* sunxi vin isp info */
++    bool RawSensor;
++    bool RAWSensor();
++    int IspId;
++    AWIspApi *IspPort;
++#endif
+ };
+ 
+ /***********************   Implementations  ***************************************/
+@@ -461,6 +474,10 @@ CvCaptureCAM_V4L::CvCaptureCAM_V4L() :
+     havePendingFrame(false)
+ {
+     memset(&timestamp, 0, sizeof(timestamp));
++#ifdef HAVE_SUNXI_VIN_ISP
++    IspId = -1;
++    IspPort = NULL;
++#endif
+ }
+ 
+ CvCaptureCAM_V4L::~CvCaptureCAM_V4L()
+@@ -599,6 +616,10 @@ bool CvCaptureCAM_V4L::autosetup_capture_mode_v4l2()
+         }
+     }
+     __u32 try_order[] = {
++#ifdef HAVE_SUNXI_VIN_ISP
++            V4L2_PIX_FMT_NV12,
++            V4L2_PIX_FMT_NV21,
++#endif
+             V4L2_PIX_FMT_BGR24,
+             V4L2_PIX_FMT_RGB24,
+             V4L2_PIX_FMT_YVU420,
+@@ -606,8 +627,10 @@ bool CvCaptureCAM_V4L::autosetup_capture_mode_v4l2()
+             V4L2_PIX_FMT_YUV411P,
+             V4L2_PIX_FMT_YUYV,
+             V4L2_PIX_FMT_UYVY,
++#ifndef HAVE_SUNXI_VIN_ISP
+             V4L2_PIX_FMT_NV12,
+             V4L2_PIX_FMT_NV21,
++#endif
+             V4L2_PIX_FMT_SBGGR8,
+             V4L2_PIX_FMT_SGBRG8,
+             V4L2_PIX_FMT_SGRBG8,
+@@ -656,7 +679,12 @@ bool CvCaptureCAM_V4L::setFps(int value)
+     CV_LOG_DEBUG(NULL, "VIDEOIO(V4L2:" << deviceName << "): FPS="
+             << streamparm.parm.capture.timeperframe.denominator << "/"
+             << streamparm.parm.capture.timeperframe.numerator);
++#ifdef HAVE_SUNXI_VIN_ISP
++    /* sunxi vin bug: VIDIOC_G_PARM return error parameter*/
++    fps = value;
++#else
+     fps = streamparm.parm.capture.timeperframe.denominator;  // TODO use numerator
++#endif
+     return true;
+ }
+ 
+@@ -704,6 +732,16 @@ bool CvCaptureCAM_V4L::initCapture()
+         return false;
+     }
+ 
++#ifdef HAVE_SUNXI_VIN_ISP
++    /* try to set framerate */
++    setFps(fps);
++
++    if (!autosetup_capture_mode_v4l2()) {
++        fprintf(stderr, "VIDEOIO ERROR: V4L2: Pixel format of incoming image is unsupported by OpenCV\n");
++        return false;
++    }
++#endif
++
+     /* Find Window info */
+     form = v4l2_format();
+     form.type = type;
+@@ -714,6 +752,7 @@ bool CvCaptureCAM_V4L::initCapture()
+         return false;
+     }
+ 
++#ifndef HAVE_SUNXI_VIN_ISP
+     if (!autosetup_capture_mode_v4l2())
+     {
+         if (errno != EBUSY)
+@@ -725,13 +764,20 @@ bool CvCaptureCAM_V4L::initCapture()
+ 
+     /* try to set framerate */
+     setFps(fps);
+-
++#endif
++    unsigned int min;
+     /* Buggy driver paranoia. */
+     if (V4L2_TYPE_IS_MULTIPLANAR(type)) {
+-        // TODO: add size adjustment if needed
+-    } else {
+-        unsigned int min;
++        min = form.fmt.pix_mp.width * 2;
+ 
++        if (form.fmt.pix_mp.plane_fmt[0].bytesperline < min)
++            form.fmt.pix_mp.plane_fmt[0].bytesperline = min;
++
++        min = form.fmt.pix_mp.plane_fmt[0].bytesperline * form.fmt.pix_mp.height;
++
++        if (form.fmt.pix_mp.plane_fmt[0].sizeimage < min)
++            form.fmt.pix_mp.plane_fmt[0].sizeimage = min;
++    } else {
+         min = form.fmt.pix.width * 2;
+ 
+         if (form.fmt.pix.bytesperline < min)
+@@ -2006,6 +2052,31 @@ void CvCaptureCAM_V4L::releaseBuffers()
+     requestBuffers(0);
+ };
+ 
++#ifdef HAVE_SUNXI_VIN_ISP
++bool CvCaptureCAM_V4L::RAWSensor()
++{
++    struct v4l2_control ctrl;
++    struct v4l2_queryctrl qc_ctrl;
++
++    memset(&ctrl, 0, sizeof(struct v4l2_control));
++    memset(&qc_ctrl, 0, sizeof(struct v4l2_queryctrl));
++    ctrl.id = V4L2_CID_SENSOR_TYPE;
++    qc_ctrl.id = V4L2_CID_SENSOR_TYPE;
++
++    if (-1 == ioctl (deviceHandle, VIDIOC_QUERYCTRL, &qc_ctrl)){
++        fprintf(stderr, "V4L2: %s QUERY V4L2_CID_SENSOR_TYPE failed\n", deviceName.c_str());
++        return false;
++    }
++
++    if (-1 == ioctl(deviceHandle, VIDIOC_G_CTRL, &ctrl)) {
++        fprintf(stderr, "V4L2: %s G_CTRL V4L2_CID_SENSOR_TYPE failed\n", deviceName.c_str());
++        return false;
++    }
++
++    return ctrl.value == V4L2_SENSOR_TYPE_RAW;
++}
++#endif /* HAVE_SUNXI_VIN_ISP */
++
+ bool CvCaptureCAM_V4L::streaming(bool startStream)
+ {
+     if (startStream != v4l_streamStarted)
+@@ -2016,6 +2087,27 @@ bool CvCaptureCAM_V4L::streaming(bool startStream)
+             return !startStream;
+         }
+ 
++#ifdef HAVE_SUNXI_VIN_ISP
++    RawSensor = RAWSensor();
++
++    if (startStream && RawSensor) {
++        int VideoIndex = -1;
++
++        sscanf(deviceName.c_str(), "/dev/video%d", &VideoIndex);
++
++        IspPort = CreateAWIspApi();
++        IspId = -1;
++        IspId = IspPort->ispGetIspId(VideoIndex);
++        if (IspId >= 0)
++            IspPort->ispStart(IspId);
++    } else if (RawSensor && IspId >= 0 && IspPort) {
++        IspPort->ispStop(IspId);
++        DestroyAWIspApi(IspPort);
++        IspPort = NULL;
++        IspId = -1;
++    }
++#endif
++
+         bool result = tryIoctl(startStream ? VIDIOC_STREAMON : VIDIOC_STREAMOFF, &type);
+         if (result)
+         {
+@@ -2232,7 +2324,7 @@ bool VideoCapture_V4L_waitAny(const std::vector<VideoCapture>& streams, CV_OUT s
+     for (size_t i = 0; i < N; ++i)
+     {
+         IVideoCapture* iCap = internal::VideoCapturePrivateAccessor::getIVideoCapture(streams[i]);
+-        CvCaptureCAM_V4L *ptr_CvCaptureCAM_V4L = dynamic_cast<CvCaptureCAM_V4L*>(iCap);
++        CvCaptureCAM_V4L *ptr_CvCaptureCAM_V4L = static_cast<CvCaptureCAM_V4L*>(iCap);
+         CV_Assert(ptr_CvCaptureCAM_V4L);
+         capPtr[i] = ptr_CvCaptureCAM_V4L;
+     }
+-- 
+2.25.1
+

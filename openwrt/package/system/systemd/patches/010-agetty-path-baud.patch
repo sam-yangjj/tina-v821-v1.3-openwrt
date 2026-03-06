@@ -1,0 +1,63 @@
+diff --git a/units/console-getty.service.m4.in b/units/console-getty.service.m4.in
+index 8ac51a4..146ba6c 100644
+--- a/units/console-getty.service.m4.in
++++ b/units/console-getty.service.m4.in
+@@ -15,7 +15,7 @@ After=rc-local.service
+ Before=getty.target
+ 
+ [Service]
+-ExecStart=-/sbin/agetty --noclear --keep-baud console 115200,38400,9600 $TERM
++ExecStart=-/usr/sbin/agetty --noclear --keep-baud console 1500000,115200,57600,38400,9600 $TERM
+ Type=idle
+ Restart=always
+ RestartSec=0
+diff --git a/units/container-getty@.service.m4.in b/units/container-getty@.service.m4.in
+index e126f3a..2e477ac 100644
+--- a/units/container-getty@.service.m4.in
++++ b/units/container-getty@.service.m4.in
+@@ -17,7 +17,7 @@ IgnoreOnIsolate=yes
+ ConditionPathExists=/dev/pts/%I
+ 
+ [Service]
+-ExecStart=-/sbin/agetty --noclear --keep-baud pts/%I 115200,38400,9600 $TERM
++ExecStart=-/usr/sbin/agetty --noclear --keep-baud pts/%I 1500000,115200,57600,38400,9600 $TERM
+ Type=idle
+ Restart=always
+ RestartSec=0
+diff --git a/units/getty@.service.m4 b/units/getty@.service.m4
+index 46164ab..164f33e 100644
+--- a/units/getty@.service.m4
++++ b/units/getty@.service.m4
+@@ -27,7 +27,7 @@ ConditionPathExists=/dev/tty0
+ 
+ [Service]
+ # the VT is cleared by TTYVTDisallocate
+-ExecStart=-/sbin/agetty --noclear %I $TERM
++ExecStart=-/usr/sbin/agetty --noclear %I $TERM
+ Type=idle
+ Restart=always
+ RestartSec=0
+diff --git a/units/serial-getty@.service.m4 b/units/serial-getty@.service.m4
+index 4522d0d..f7a0d38 100644
+--- a/units/serial-getty@.service.m4
++++ b/units/serial-getty@.service.m4
+@@ -9,8 +9,8 @@
+ Description=Serial Getty on %I
+ Documentation=man:agetty(8) man:systemd-getty-generator(8)
+ Documentation=http://0pointer.de/blog/projects/serial-console.html
+-BindsTo=dev-%i.device
+-After=dev-%i.device systemd-user-sessions.service plymouth-quit-wait.service
++#BindsTo=dev-%i.device
++After=systemd-user-sessions.service plymouth-quit-wait.service
+ m4_ifdef(`HAVE_SYSV_COMPAT',
+ After=rc-local.service
+ )m4_dnl
+@@ -22,7 +22,7 @@ Before=getty.target
+ IgnoreOnIsolate=yes
+ 
+ [Service]
+-ExecStart=-/sbin/agetty --keep-baud 115200,38400,9600 %I $TERM
++ExecStart=-/usr/sbin/agetty --autologin root --login-program /bin/ash --login-options "--login" --skip-login --keep-baud 1500000,115200,57600,38400,9600 ttyAS0 $TERM
+ Type=idle
+ Restart=always
+ UtmpIdentifier=%I

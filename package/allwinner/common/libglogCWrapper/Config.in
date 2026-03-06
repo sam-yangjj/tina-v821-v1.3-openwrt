@@ -1,0 +1,23 @@
+config PACKAGE_libglogCWrapper_config
+	bool "libglogCWrapper config"
+	default y
+	select PACKAGE_libglogCWrapper
+	help
+	  move config out of PACKAGE_libglogCWrapper to solve recursive dependency.
+
+if PACKAGE_libglogCWrapper_config
+
+choice
+	prompt "select log tool"
+	default glogCWrapper_use_glog
+config glogCWrapper_use_glog
+	bool "use glog"
+	help
+	  use glog API to implement.
+config glogCWrapper_use_printf
+	bool "use printf"
+	help
+	  use printf() to implement.
+endchoice
+
+endif

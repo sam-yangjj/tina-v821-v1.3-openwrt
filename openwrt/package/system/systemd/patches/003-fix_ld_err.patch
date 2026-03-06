@@ -1,0 +1,169 @@
+diff --git a/src/core/cgroup.c b/src/core/cgroup.c
+index 10fdcc9..be8a8a7 100644
+--- a/src/core/cgroup.c
++++ b/src/core/cgroup.c
+@@ -21,6 +21,7 @@
+ 
+ #include <fcntl.h>
+ #include <fnmatch.h>
++#include <sys/sysmacros.h>
+ 
+ #include "path-util.h"
+ #include "special.h"
+diff --git a/src/core/umount.c b/src/core/umount.c
+index dd7df19..926d797 100644
+--- a/src/core/umount.c
++++ b/src/core/umount.c
+@@ -27,6 +27,7 @@
+ #include <unistd.h>
+ #include <linux/loop.h>
+ #include <linux/dm-ioctl.h>
++#include <sys/sysmacros.h>
+ 
+ #include "list.h"
+ #include "mount-setup.h"
+diff --git a/src/fsck/fsck.c b/src/fsck/fsck.c
+index 78ceeb6..d97e1e5 100644
+--- a/src/fsck/fsck.c
++++ b/src/fsck/fsck.c
+@@ -27,6 +27,7 @@
+ #include <unistd.h>
+ #include <fcntl.h>
+ #include <sys/file.h>
++#include <sys/sysmacros.h>
+ 
+ #include "sd-bus.h"
+ #include "libudev.h"
+diff --git a/src/gpt-auto-generator/gpt-auto-generator.c b/src/gpt-auto-generator/gpt-auto-generator.c
+index 5c58b58..9d837ff 100644
+--- a/src/gpt-auto-generator/gpt-auto-generator.c
++++ b/src/gpt-auto-generator/gpt-auto-generator.c
+@@ -25,6 +25,7 @@
+ #include <sys/ioctl.h>
+ #include <sys/statfs.h>
+ #include <blkid/blkid.h>
++#include <sys/sysmacros.h>
+ 
+ #include "sd-id128.h"
+ #include "libudev.h"
+diff --git a/src/hibernate-resume/hibernate-resume.c b/src/hibernate-resume/hibernate-resume.c
+index f28eabb..17d7292 100644
+--- a/src/hibernate-resume/hibernate-resume.c
++++ b/src/hibernate-resume/hibernate-resume.c
+@@ -23,6 +23,7 @@
+ #include <errno.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
++#include <sys/sysmacros.h>
+ #include <unistd.h>
+ 
+ #include "log.h"
+diff --git a/src/journal/journalctl.c b/src/journal/journalctl.c
+index 55c7786..c0b3ee5 100644
+--- a/src/journal/journalctl.c
++++ b/src/journal/journalctl.c
+@@ -23,6 +23,7 @@
+ #include <fcntl.h>
+ #include <fnmatch.h>
+ #include <errno.h>
++#include <sys/sysmacros.h>
+ #include <stddef.h>
+ #include <string.h>
+ #include <stdio.h>
+diff --git a/src/libudev/libudev.h b/src/libudev/libudev.h
+index a94505c..cfff027 100644
+--- a/src/libudev/libudev.h
++++ b/src/libudev/libudev.h
+@@ -23,6 +23,7 @@
+ #include <stdarg.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
++#include <sys/sysmacros.h>
+ 
+ #ifdef __cplusplus
+ extern "C" {
+diff --git a/src/login/logind-session-device.c b/src/login/logind-session-device.c
+index c2de862..3c81518 100644
+--- a/src/login/logind-session-device.c
++++ b/src/login/logind-session-device.c
+@@ -27,6 +27,7 @@
+ #include <string.h>
+ #include <sys/ioctl.h>
+ #include <sys/stat.h>
++#include <sys/sysmacros.h>
+ #include <sys/types.h>
+ #include <unistd.h>
+ 
+diff --git a/src/nspawn/nspawn.c b/src/nspawn/nspawn.c
+index fb67251..afba7d5 100644
+--- a/src/nspawn/nspawn.c
++++ b/src/nspawn/nspawn.c
+@@ -25,6 +25,7 @@
+ #include <sys/types.h>
+ #include <sys/syscall.h>
+ #include <sys/mount.h>
++#include <sys/sysmacros.h>
+ #include <sys/wait.h>
+ #include <stdlib.h>
+ #include <string.h>
+diff --git a/src/shared/btrfs-util.c b/src/shared/btrfs-util.c
+index b34ac8b..c9d1d5d 100644
+--- a/src/shared/btrfs-util.c
++++ b/src/shared/btrfs-util.c
+@@ -22,6 +22,7 @@
+ #include <stdlib.h>
+ #include <sys/vfs.h>
+ #include <sys/stat.h>
++#include <sys/sysmacros.h>
+ 
+ #ifdef HAVE_LINUX_BTRFS_H
+ #include <linux/btrfs.h>
+diff --git a/src/shared/util.c b/src/shared/util.c
+index ba035ca..4f83f92 100644
+--- a/src/shared/util.c
++++ b/src/shared/util.c
+@@ -29,6 +29,7 @@
+ #include <syslog.h>
+ #include <sched.h>
+ #include <sys/resource.h>
++#include <sys/sysmacros.h>
+ #include <linux/sched.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+diff --git a/src/tmpfiles/tmpfiles.c b/src/tmpfiles/tmpfiles.c
+index c948d4d..b16d490 100644
+--- a/src/tmpfiles/tmpfiles.c
++++ b/src/tmpfiles/tmpfiles.c
+@@ -24,6 +24,7 @@
+ #include <fcntl.h>
+ #include <errno.h>
+ #include <string.h>
++#include <sys/sysmacros.h>
+ #include <limits.h>
+ #include <dirent.h>
+ #include <grp.h>
+diff --git a/src/tty-ask-password-agent/tty-ask-password-agent.c b/src/tty-ask-password-agent/tty-ask-password-agent.c
+index 47093b8..cd34e0f 100644
+--- a/src/tty-ask-password-agent/tty-ask-password-agent.c
++++ b/src/tty-ask-password-agent/tty-ask-password-agent.c
+@@ -26,6 +26,7 @@
+ #include <sys/un.h>
+ #include <stddef.h>
+ #include <poll.h>
++#include <sys/sysmacros.h>
+ #include <sys/inotify.h>
+ #include <unistd.h>
+ #include <getopt.h>
+diff --git a/src/udev/udev.h b/src/udev/udev.h
+index dece6ec..8a9f77d 100644
+--- a/src/udev/udev.h
++++ b/src/udev/udev.h
+@@ -21,6 +21,8 @@
+ #include <sys/types.h>
+ #include <sys/param.h>
+ #include <signal.h>
++#include <sys/sysmacros.h>
++
+ 
+ #include "macro.h"
+ #include "sd-rtnl.h"

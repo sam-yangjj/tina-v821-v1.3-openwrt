@@ -1,0 +1,30 @@
+From fbed8564cf1db84a7e727421fb2fa3b765b6e69a Mon Sep 17 00:00:00 2001
+From: chengweipeng <chengweipeng@allwinnertech.com>
+Date: Wed, 31 Jul 2024 11:09:54 +0800
+Subject: [PATCH] numpy: aarch64 fix build on gcc13.2
+
+Signed-off-by: chengweipeng <chengweipeng@allwinnertech.com>
+---
+ numpy/core/src/npymath/npy_math_private.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/numpy/core/src/npymath/npy_math_private.h b/numpy/core/src/npymath/npy_math_private.h
+index a474b3d..901a301 100644
+--- a/numpy/core/src/npymath/npy_math_private.h
++++ b/numpy/core/src/npymath/npy_math_private.h
+@@ -173,8 +173,12 @@ do {                                                            \
+ } while (0)
+ 
+ #ifdef NPY_USE_C99_COMPLEX
++#ifdef __cplusplus
++#include <complex>
++#else
+ #include <complex.h>
+ #endif
++#endif
+ 
+ /*
+  * Long double support
+-- 
+2.25.1
+

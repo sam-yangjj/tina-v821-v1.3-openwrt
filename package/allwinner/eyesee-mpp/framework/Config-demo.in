@@ -1,0 +1,99 @@
+if PACKAGE_eyesee-mpp-framework-demo
+
+# mpp framework sample config
+
+config mpp_framework_sample
+	bool "select mpp framework sample"
+	depends on mpp_vi
+	depends on mpp_venc
+	select mpp_sample_configfileparser
+	default n
+	help
+	  select the sample to be compiled.
+	  mpi region depends on vi and venc when build basic libaw_mpp.a or libmedia_mpp.so.
+
+config mpp_fw_sample_Camera
+	bool "mpp framework sample_Camera"
+	depends on mpp_framework_sample
+	help
+	  mpp framework sample_Camera.
+
+config mpp_fw_sample_Camera_LargePhoto
+	bool "mpp framework sample_Camera_LargePhoto"
+	depends on mpp_framework_sample
+	help
+	  mpp framework sample_Camera_LargePhoto is used to show how to take large picture in high speed.
+
+config mpp_fw_sample_CDREmergency
+	bool "mpp framework sample_CDREmergency"
+	depends on mpp_framework_sample
+	help
+	  mpp framework sample_CDREmergency.
+
+config mpp_fw_sample_EncodeResolutionChange
+	bool "mpp framework sample_EncodeResolutionChange"
+	depends on mpp_framework_sample
+	help
+	  mpp framework sample_EncodeResolutionChange.
+
+config mpp_fw_sample_RecorderCallbackOut
+	bool "mpp framework sample_RecorderCallbackOut"
+	depends on mpp_framework_sample
+	help
+	  mpp framework sample_RecorderCallbackOut.
+
+config mpp_fw_sample_RecorderSegment
+	bool "mpp framework sample_RecorderSegment"
+	depends on mpp_framework_sample
+	help
+	  mpp framework sample_RecorderSegment.
+
+config mpp_fw_sample_RecordLowDelay
+	bool "mpp framework sample_RecordLowDelay"
+	depends on mpp_framework_sample
+	help
+	  mpp framework sample_RecordLowDelay.	  
+
+config mpp_fw_sample_RecordMultiStream
+	bool "mpp framework sample_RecordMultiStream"
+	depends on mpp_framework_sample
+	help
+	  mpp framework sample_RecordMultiStream.
+
+config mpp_fw_sample_RecordSwitchFileNormal
+	bool "mpp framework sample_RecordSwitchFileNormal"
+	depends on mpp_framework_sample
+	help
+	  mpp framework sample_RecordSwitchFileNormal.
+
+config mpp_fw_sample_ThumbRetriever
+	bool "mpp framework sample_ThumbRetriever"
+	depends on mpp_framework_sample
+	help
+	  mpp framework sample_ThumbRetriever.
+
+config mpp_fw_sample_OSD
+	bool "mpp framework sample_OSD"
+	depends on mpp_framework_sample
+	help
+	  mpp framework sample_OSD.	  
+
+config mpp_fw_sample_Player
+	bool "mpp framework sample_Player"
+	depends on mpp_framework_sample
+	help
+	  mpp framework sample_Player.	  
+
+config mpp_fw_sample_VdecDynRot_Player
+	bool "mpp framework sample_VdecDynRot_Player"
+	depends on mpp_framework_sample
+	help
+	  mpp framework sample_VdecDynRot_Player.
+
+config mpp_fw_sample_USBCamera
+	bool "mpp framework sample_USBCamera"
+	depends on mpp_framework_sample && mpp_uvc
+	help
+	  mpp framework sample_USBCamera.
+
+endif

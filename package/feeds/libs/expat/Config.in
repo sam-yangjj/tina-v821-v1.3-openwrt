@@ -1,0 +1,15 @@
+menu "libexpat Configuration"
+	depends on PACKAGE_libexpat
+
+choice
+	prompt "libexpat build lib"
+	default LIBEXPAT_BUILD_BOTH
+config LIBEXPAT_DYNAMIC_ONLY
+	bool "only libexpat dynamic library"
+config LIBEXPAT_STATIC_ONLY
+	bool "only libexpat static library"
+config LIBEXPAT_BUILD_BOTH
+	bool "both"
+endchoice
+
+endmenu

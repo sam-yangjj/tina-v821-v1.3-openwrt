@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+# Load mpp modules....
+#
+
+MODULES_DIR="/lib/modules/`uname -r`"
+
+start() {
+    printf "---try mount /dev/by-name/private---\n"
+    if [ -b /dev/by-name/private ]; then
+        mkdir -p /tmp/private/
+        mount -t vfat /dev/by-name/private /tmp/private/
+        if [ -f /tmp/private/ULI/factory/wifi_mac.txt ]; then
+            local wifi_mac=$(cat /tmp/private/ULI/factory/wifi_mac.txt)
+            echo ${wifi_mac} > /sys/class/addr_mgt/addr_wifi
+        fi
+    fi
+}
+
+stop() {
+    printf "Unload mpp modules\n"
+}
+
+case "$1" in
+    start)
+	start
+	;;
+    stop)
+	stop
+	;;
+    restart|reload)
+	stop
+	start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?

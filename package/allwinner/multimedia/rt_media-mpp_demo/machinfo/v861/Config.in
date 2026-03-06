@@ -1,0 +1,92 @@
+config PACKAGE_rt_media-mpp_demo_config
+	bool "rt_media-mpp_demo config"
+	default n
+	select PACKAGE_rt_media-mpp_demo
+	help
+	  move config out of PACKAGE_rt_media-mpp_demo to truely depend on other packages.
+
+if PACKAGE_rt_media-mpp_demo_config
+
+config rt_media-mpp_demo_avmuxer
+	bool "demo_avmuxer"
+	default y
+	help
+		use rt_media to get h265, use mpp-middleware to get aac.
+		use mpp-middlware to wrap h265 and aac in mp4File.
+
+config rt_media-mpp_demo_video_muxer
+	bool "demo_video_muxer"
+	default n
+	help
+		use rt_media to get h264, use mpi_mux to wrap to mp4 file.
+
+config rt_media-mpp_demo_codec_parallel
+	bool "demo_codec_parallel"
+	default n
+	select mpp_sample_configfileparser
+	help
+		use rt_media to vencoder, use mpi_vdec to vdecoder.
+
+config rt_media-mpp_demo_video_rtsp
+	bool "demo_video_rtsp"
+	default n
+	help
+		use rt_media get encode stream send to rtsp.
+
+config rt_media-mpp_demo_video_webrtc
+	bool "demo_video_webrtc"
+	default n
+	select PACKAGE_libpeer
+	select PACKAGE_wifimanager-v2.0-lib
+	help
+		use rt_media get encode stream send to web_rtc.
+
+config demo_video_webrtc_autostart
+	bool "Enable auto-start on boot"
+	default n
+	depends on rt_media-mpp_demo_video_webrtc
+	help
+		Enable this option if you want demo_video_webrtc to start automatically during boot.
+
+config demo_video_webrtc_ai_lm
+	bool "Enable ai_lm in demo_video_webrtc"
+	default n
+	depends on rt_media-mpp_demo_video_webrtc
+	select PACKAGE_libailm
+	help
+		Enable this option if you want use ai_lm in demo_video_webrtc.
+
+config rt_media-mpp_demo_avmuxer_photo
+	bool "demo_avmuxer_photo"
+	default n
+	help
+		use rt_media and mpp-middleware to demonstrate picture mode and record mode.
+
+config rt_media-mpp_demo_timelapse
+	bool "demo_timelapse"
+	default n
+	help
+		show how to operate rt_media and mpi_mux to implement timelapse.
+
+config rt_media-mpp_demo_mjpeg_dual_stream
+	bool "demo_mjpeg_dual_stream"
+	default n
+	help
+		show how to insert h264 stream to mjpeg APPn.
+
+config rt_media-mpp_demo_ai_roi
+	bool "demo_ai_roi"
+	default n
+	help
+		show ai video encoding. Using pdetlib to detect person areas, then using roi encoding to these areas.
+
+config rt_media-mpp_demo_live_usbcamera
+	bool "demo_live_usbcamera"
+	default n
+	select person_detection_rlion
+	select mpp_external_lz4
+	select mpp_system_rgb_ctrl
+	help
+		uvc, 4k record, person detect and uac in/out demo.
+
+endif

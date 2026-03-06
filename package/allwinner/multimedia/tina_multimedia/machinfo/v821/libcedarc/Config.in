@@ -1,0 +1,75 @@
+menu "Select cedarc configuration options"
+depends on PACKAGE_libcedarc
+
+comment "V821 Video Encoders and Decoders options"
+
+config libcedarc_venc
+    bool "enable venc libs"
+    default y
+    help
+      venc libs is used to encode video frame.
+
+config libcedarc_venc_h264
+    bool "support venc h264"
+    depends on libcedarc_venc
+    default y
+    help
+      support video encode h264.
+
+config libcedarc_venc_jpeg
+    bool "support venc jpeg"
+    depends on libcedarc_venc
+    default y
+    help
+      support video encode jpeg.
+
+config libcedarc_venc_support_ext_param
+    bool "support venc param parse of xml"
+    depends on libcedarc_venc
+    default y
+    help
+      venc debugging will use ext xml file to config venc params.
+
+config libcedarc_vdec
+    bool "enable vdec libs"
+    default y
+    help
+      vdec is used to decode video frame.
+
+config libcedarc_vdec_jpeg
+    bool "support vdec jpeg"
+    depends on libcedarc_vdec
+    default y
+    help
+      support video decode jpeg.
+
+config libcedarc_ion_size_pool_heap
+    bool "use ion size pool heap"
+    default y
+    help
+      use ion size pool heap.
+
+choice
+	prompt "select compile libcedarc to static or dynamic library"
+	default libcedarc_compile_static_lib
+
+config libcedarc_compile_static_lib
+    bool "compile static lib"
+    help
+      compile static libs for libcedarc.
+
+config libcedarc_compile_dynamic_lib
+    bool "compile dynamic lib"
+    help
+      compile dynamic lib for libcedarc.
+
+endchoice
+
+config libcedarc_vencode_demo
+    bool "compile vencode demo"
+    default n
+    help
+      compile vencode demo of libcedarc.
+
+endmenu
+

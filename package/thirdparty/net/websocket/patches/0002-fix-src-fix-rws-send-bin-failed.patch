@@ -1,0 +1,98 @@
+From 1564260316cd16b30b0d6645e79e79322d47b70f Mon Sep 17 00:00:00 2001
+From: xuwugang <xuwugang@allwinnertech.com>
+Date: Thu, 17 Apr 2025 13:47:52 +0800
+Subject: [PATCH] fix(src): fix rws send bin failed.
+
+---
+ src/rws_frame.c | 53 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ src/rws_frame.h |  3 ++-
+ 2 files changed, 54 insertions(+), 2 deletions(-)
+
+diff --git a/src/rws_frame.c b/src/rws_frame.c
+index 7bc46f3..44bb370 100644
+--- a/src/rws_frame.c
++++ b/src/rws_frame.c
+@@ -117,7 +117,7 @@ _rws_frame * rws_frame_create_with_recv_data(const void * data, const size_t dat
+ }
+
+ #if RWS_SUPPORT_SEND_BIN
+-void litews_frame_fill_with_send_bin_data(_rws_frame * f, unsigned char * header, const size_t data_size, rws_binary bin_type)
++void litews_frame_create_bin_header(_rws_frame * f, unsigned char * header, const size_t data_size, rws_binary bin_type)
+ {
+ 	const unsigned int size = (unsigned int)data_size;
+
+@@ -166,6 +166,57 @@ void litews_frame_fill_with_send_bin_data(_rws_frame * f, unsigned char * header
+ 		f->header_size += 4;
+ 	}
+ }
++
++void litews_frame_fill_with_send_bin_data(_rws_frame * f, const void * data, \
++		const size_t data_size, rws_binary bin_type)
++{
++	unsigned char header[16];
++	unsigned char * frame = NULL;
++	unsigned char mask[4];
++	size_t index = 0;
++
++	litews_frame_create_bin_header(f, header, data_size, bin_type);
++
++	//check bin header data
++	//  -----------------------------------------------
++	//   F  |   |   |   |   |   |   |   |
++	//   I  | 0 | 0 | 0 |    OPCODE     |
++	//   N  |   |   |   |   |   |   |   |
++
++	f->data_size = data_size + f->header_size;
++	f->data = rws_malloc(f->data_size);
++	if (f->data == NULL) {
++		RWS_LOGI("rws_malloc fail\n");
++		return;
++	}
++	frame = (unsigned char *)f->data;
++	memcpy(frame, header, f->header_size);
++
++	if (data)
++	{ // have data to send
++		frame += f->header_size;
++		memcpy(frame, data, data_size);
++
++		if (f->is_masked)
++		{
++			memcpy(mask, &f->mask, 4);
++			for (index = 0; index < data_size; index++)
++			{
++				*frame = *frame ^ mask[index & 0x3];
++				frame++;
++			}
++		}
++	}
++
++	if(bin_type == rws_binary_finish)
++	{
++		f->is_finished = rws_true;
++	}
++	else
++	{
++		f->is_finished = rws_false;
++	}
++}
+ #endif /* RWS_SUPPORT_SEND_BIN */
+
+ void rws_frame_create_header(_rws_frame * f, unsigned char * header, const size_t data_size) {
+diff --git a/src/rws_frame.h b/src/rws_frame.h
+index fa1741c..e7ecfca 100644
+--- a/src/rws_frame.h
++++ b/src/rws_frame.h
+@@ -57,7 +57,8 @@ typedef struct _rws_frame_struct {
+ size_t rws_check_recv_frame_size(const void *data,const size_t data_size);
+
+ #if RWS_SUPPORT_SEND_BIN
+-void litews_frame_fill_with_send_bin_data(_rws_frame * f, unsigned char * header, const size_t data_size, rws_binary bin_type);
++void litews_frame_create_bin_header(_rws_frame * f, unsigned char * header, const size_t data_size, rws_binary bin_type);
++void litews_frame_fill_with_send_bin_data(_rws_frame * f, const void * data, const size_t data_size, rws_binary bin_type);
+ #endif
+
+ _rws_frame * rws_frame_create_with_recv_data(const void * data, const size_t data_size);
+--
+2.29.0
+

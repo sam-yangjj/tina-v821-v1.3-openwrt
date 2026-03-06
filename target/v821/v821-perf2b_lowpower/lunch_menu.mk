@@ -1,0 +1,7 @@
+BOOT_MEDIUM:="SPI NOR"
+BOOT_TYPE:=FASTBOOT
+SUPPORT_BOOT_MEDIUM:="SPI NOR/SPI NAND/SDCard"
+HARDWARE_NAME:="V821M2-WXX_PER2_B_4L_V1_1_20250228"
+NETWORK:="Integrated WIFI/SDIO WIFI + ETH"
+APPLICATION:="IPC, Dev Board, Low Power Application, WIFI Always On"
+URL:="docs.aw-ol.com/docs/soc/v821/hardware/3rd_hardware/perf2b"

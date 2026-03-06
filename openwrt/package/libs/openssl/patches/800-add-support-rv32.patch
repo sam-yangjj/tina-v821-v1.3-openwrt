@@ -1,0 +1,34 @@
+Index: openssl-1.1.1n/Configurations/10-main.conf
+===================================================================
+--- openssl-1.1.1n.orig/Configurations/10-main.conf
++++ openssl-1.1.1n/Configurations/10-main.conf
+@@ -760,7 +760,10 @@ my %targets = (
+         inherit_from     => [ "linux-generic64"],
+         perlasm_scheme   => "linux64",
+     },
+-
++    "linux32-riscv32" => {
++        inherit_from     => [ "linux-generic32"],
++        perlasm_scheme   => "linux32",
++    },
+     #### IA-32 targets...
+     #### These two targets are a bit aged and are to be used on older Linux
+     #### machines where gcc doesn't understand -m32 and -m64
+Index: openssl-1.1.1n/Configurations/25-openwrt.conf
+===================================================================
+--- openssl-1.1.1n.orig/Configurations/25-openwrt.conf
++++ openssl-1.1.1n/Configurations/25-openwrt.conf
+@@ -40,9 +40,12 @@ my %targets = (
+     "linux-x86_64-openwrt" => {
+         inherit_from    => [ "linux-x86_64", "openwrt" ],
+     },
+-    "linux-riscv-openwrt" => {
++    "linux-riscv64-openwrt" => {
+         inherit_from    => [ "linux-generic64", "openwrt" ],
+     },
++    "linux-riscv32-openwrt" => {
++        inherit_from    => [ "linux-generic32", "openwrt" ],
++    },
+ 
+ ### Basic default option
+     "linux-generic32-openwrt" => {

@@ -1,0 +1,149 @@
+From fda8b41c2378726a2a179d5f73deed6734f1e11b Mon Sep 17 00:00:00 2001
+From: liuchenyang <liuchenyang@allwinnertech.com>
+Date: Wed, 22 Mar 2023 11:14:24 +0800
+Subject: [PATCH] fix some mount problem
+
+---
+ CMakeLists.txt       |  3 +++
+ block.c              | 29 +++++++++++++++++++++++++----
+ libblkid-tiny/vfat.c |  3 +--
+ mount_root.c         |  4 ++++
+ 4 files changed, 33 insertions(+), 6 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 3421fec..4b091b2 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -83,6 +83,9 @@ IF(DEFINED CMAKE_UBIFS_EXTROOT)
+ ELSE(DEFINED CMAKE_UBIFS_EXTROOT)
+ 	TARGET_LINK_LIBRARIES(block blkid-tiny dl uci ubox ubus blobmsg_json ${json})
+ ENDIF(DEFINED CMAKE_UBIFS_EXTROOT)
++IF(DEFINED CMAKE_ROOTFS_RW)
++    ADD_DEFINITIONS(-DROOTFS_RW)
++ENDIF(DEFINED CMAKE_ROOTFS_RW)
+ INSTALL(TARGETS block RUNTIME DESTINATION sbin)
+ 
+ ADD_EXECUTABLE(jffs2reset jffs2reset.c)
+diff --git a/block.c b/block.c
+index 4b45200..48e2558 100644
+--- a/block.c
++++ b/block.c
+@@ -593,6 +593,8 @@ static void cache_load(int mtd)
+ 	_cache_load("/dev/vd*");
+ 	_cache_load("/dev/xvd*");
+ 	_cache_load("/dev/dm-*");
++	_cache_load("/dev/nand*");
++	_cache_load("/dev/by-name/*");
+ }
+ 
+ 
+@@ -804,7 +806,7 @@ static void check_filesystem(struct probe_info *pr)
+ 			execl(ckfs, ckfs, "-b", pr->dev, NULL);
+ 			exit(EXIT_FAILURE);
+ 		} else {
+-			execl(ckfs, ckfs, "-p", pr->dev, NULL);
++			execl(ckfs, ckfs, "-y", pr->dev, NULL);
+ 			exit(EXIT_FAILURE);
+ 		}
+ 	} else if (pid > 0) {
+@@ -1520,8 +1522,8 @@ static int check_extroot(char *path)
+ 
+ 	fp = fopen(tag, "r");
+ 	if (!fp) {
+-		ULOG_ERR("extroot: failed to read UUID from %s: %d (%m)\n", tag,
+-			 errno);
++		ULOG_ERR("extroot: failed to open %s: %d (%s), umount %s\n",
++			tag, errno, strerror(errno), path);
+ 		return -1;
+ 	}
+ 
+@@ -1577,6 +1579,7 @@ static int mount_extroot(char *cfg)
+ 	}
+ 	if (pr) {
+ 		if (strncmp(pr->type, "ext", 3) &&
++		    strncmp(pr->type, "jffs2", 4) &&
+ 		    strncmp(pr->type, "f2fs", 4) &&
+ 		    strncmp(pr->type, "btrfs", 5) &&
+ 		    strncmp(pr->type, "ntfs", 4) &&
+@@ -1770,8 +1773,8 @@ static int main_info(int argc, char **argv)
+ 	int i;
+ 	struct probe_info *pr;
+ 
+-	cache_load(1);
+ 	if (argc == 2) {
++		cache_load(1);
+ 		list_for_each_entry(pr, &devices, list)
+ 			print_block_info(pr);
+ 
+@@ -1779,6 +1782,7 @@ static int main_info(int argc, char **argv)
+ 	};
+ 
+ 	for (i = 2; i < argc; i++) {
++#if 0
+ 		struct stat s;
+ 
+ 		if (stat(argv[i], &s)) {
+@@ -1792,6 +1796,23 @@ static int main_info(int argc, char **argv)
+ 		pr = find_block_info(NULL, NULL, argv[i]);
+ 		if (pr)
+ 			print_block_info(pr);
++#else
++		int gl_flags = GLOB_NOESCAPE | GLOB_MARK;
++		glob_t gl;
++		int j;
++		if (glob(argv[i], gl_flags, NULL, &gl) != 0) {
++			ULOG_ERR("(block info) there is no %s\n", argv[i]);
++			if (i+1 >= argc)
++				return -1;
++			continue;
++		}
++		for (j = 0; j < gl.gl_pathc; j++) {
++			struct probe_info *pr = _probe_path(gl.gl_pathv[j]);
++			if (pr)
++				print_block_info(pr);
++		}
++		globfree(&gl);
++#endif
+ 	}
+ 
+ 	return 0;
+diff --git a/libblkid-tiny/vfat.c b/libblkid-tiny/vfat.c
+index 1bce002..d5716d5 100644
+--- a/libblkid-tiny/vfat.c
++++ b/libblkid-tiny/vfat.c
+@@ -349,7 +349,7 @@ static int probe_vfat(blkid_probe pr, const struct blkid_idmag *mag)
+ 
+ 	} else if (vs->vs_fat32_length) {
+ 		unsigned char *buf;
+-		uint16_t fsinfo_sect;
++		uint16_t fsinfo_sect = le16_to_cpu(vs->vs_fsinfo_sector);
+ 		int maxloop = 100;
+ 
+ 		/* Search the FAT32 root dir for the label attribute */
+@@ -398,7 +398,6 @@ static int probe_vfat(blkid_probe pr, const struct blkid_idmag *mag)
+ 		 * but also allow all bytes set to '\0', because some volumes
+ 		 * do not set the signature at all.
+ 		 */
+-		fsinfo_sect = le16_to_cpu(vs->vs_fsinfo_sector);
+ 		if (fsinfo_sect) {
+ 			struct fat32_fsinfo *fsinfo;
+ 
+diff --git a/mount_root.c b/mount_root.c
+index d343909..f617a68 100644
+--- a/mount_root.c
++++ b/mount_root.c
+@@ -41,7 +41,11 @@ start(int argc, char *argv[1])
+ 		root = volume_find("rootfs");
+ 		volume_init(root);
+ 		ULOG_NOTE("mounting /dev/root\n");
++#ifdef ROOTFS_RW
+ 		mount("/dev/root", "/", NULL, MS_NOATIME | MS_REMOUNT, 0);
++#else
++		mount("/dev/root", "/", NULL, MS_RDONLY | MS_NOATIME | MS_REMOUNT, 0);
++#endif
+ 	}
+ 
+ 	/* Check for extroot config in rootfs before even trying rootfs_data */
+-- 
+2.29.0
+

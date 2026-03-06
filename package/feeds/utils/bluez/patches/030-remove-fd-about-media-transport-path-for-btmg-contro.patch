@@ -1,0 +1,27 @@
+From 4313614cf35174b5353525d771b3c2c864091f70 Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Fri, 29 Mar 2024 11:37:54 +0800
+Subject: [PATCH] remove fd++ about media transport path for btmg control
+ volume
+
+Signed-off-by: luoyuyi <luoyuyi@allwinnertech.com>
+---
+ profiles/audio/transport.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/profiles/audio/transport.c b/profiles/audio/transport.c
+index 48fabba..5d47e80 100644
+--- a/profiles/audio/transport.c
++++ b/profiles/audio/transport.c
+@@ -875,7 +875,7 @@ struct media_transport *media_transport_create(struct btd_device *device,
+ 	transport->remote_endpoint = remote_endpoint;
+ 	transport->path = g_strdup_printf("%s/fd%d",
+ 				remote_endpoint ? remote_endpoint :
+-				device_get_path(device), fd++);
++				device_get_path(device), fd); //think of no use, remove for btmg set volume
+ 	transport->fd = -1;
+ 
+ 	uuid = media_endpoint_get_uuid(endpoint);
+-- 
+2.29.0
+

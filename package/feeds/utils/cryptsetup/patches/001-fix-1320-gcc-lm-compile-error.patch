@@ -1,0 +1,93 @@
+diff -Naur cryptsetup-2.4.3/configure cryptsetup-2.4.3-new/configure
+--- cryptsetup-2.4.3/configure	2022-01-13 17:24:34.000000000 +0800
++++ cryptsetup-2.4.3-new/configure	2025-03-22 15:40:41.973773556 +0800
+@@ -18646,7 +18646,7 @@
+   printf %s "(cached) " >&6
+ else $as_nop
+   ac_check_lib_save_LIBS=$LIBS
+-LIBS="-ldevmapper  $LIBS"
++LIBS="-ldevmapper -lm  $LIBS"
+ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+ 
+@@ -18678,7 +18678,7 @@
+ then :
+   printf "%s\n" "#define HAVE_LIBDEVMAPPER 1" >>confdefs.h
+ 
+-  LIBS="-ldevmapper $LIBS"
++  LIBS="-ldevmapper -lm $LIBS"
+ 
+ else $as_nop
+   as_fn_error $? "You need the device-mapper library." "$LINENO" 5
+@@ -18691,7 +18691,7 @@
+   printf %s "(cached) " >&6
+ else $as_nop
+   ac_check_lib_save_LIBS=$LIBS
+-LIBS="-ldevmapper  $LIBS"
++LIBS="-ldevmapper -lm  $LIBS"
+ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+ 
+@@ -18723,7 +18723,7 @@
+ then :
+   printf "%s\n" "#define HAVE_LIBDEVMAPPER 1" >>confdefs.h
+ 
+-  LIBS="-ldevmapper $LIBS"
++  LIBS="-ldevmapper -lm $LIBS"
+ 
+ else $as_nop
+   as_fn_error $? "The device-mapper library on your system is too old." "$LINENO" 5
+@@ -18742,7 +18742,7 @@
+   printf %s "(cached) " >&6
+ else $as_nop
+   ac_check_lib_save_LIBS=$LIBS
+-LIBS="-ldevmapper  $LIBS"
++LIBS="-ldevmapper -lm  $LIBS"
+ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+ 
+@@ -18774,7 +18774,7 @@
+ then :
+   printf "%s\n" "#define HAVE_LIBDEVMAPPER 1" >>confdefs.h
+ 
+-  LIBS="-ldevmapper $LIBS"
++  LIBS="-ldevmapper -lm $LIBS"
+ 
+ else $as_nop
+   as_fn_error $? "You need the device-mapper library." "$LINENO" 5
+@@ -18787,7 +18787,7 @@
+   printf %s "(cached) " >&6
+ else $as_nop
+   ac_check_lib_save_LIBS=$LIBS
+-LIBS="-ldevmapper  $LIBS"
++LIBS="-ldevmapper -lm  $LIBS"
+ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+ 
+@@ -18819,7 +18819,7 @@
+ then :
+   printf "%s\n" "#define HAVE_LIBDEVMAPPER 1" >>confdefs.h
+ 
+-  LIBS="-ldevmapper $LIBS"
++  LIBS="-ldevmapper -lm $LIBS"
+ 
+ else $as_nop
+   as_fn_error $? "The device-mapper library on your system is too old." "$LINENO" 5
+@@ -20926,7 +20926,7 @@
+   printf %s "(cached) " >&6
+ else $as_nop
+   ac_check_lib_save_LIBS=$LIBS
+-LIBS="-ldevmapper  $LIBS"
++LIBS="-ldevmapper -lm  $LIBS"
+ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+ 
+@@ -20958,7 +20958,7 @@
+ then :
+   printf "%s\n" "#define HAVE_LIBDEVMAPPER 1" >>confdefs.h
+ 
+-  LIBS="-ldevmapper $LIBS"
++  LIBS="-ldevmapper -lm $LIBS"
+ 
+ else $as_nop
+   as_fn_error $? "Cannot link with static device-mapper library." "$LINENO" 5

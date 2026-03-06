@@ -1,0 +1,29 @@
+
+# 检查参数是否正确
+if [ "$#" -ne 3 ]; then
+    echo "Usage: $0 <pid> <uuid> <authkey>"
+    exit 1
+fi
+
+# 参数赋值
+PID=$1
+UUID=$2
+AUTHKEY=$3
+FILE="/etc/tuya_device_cfg.json"
+
+# 检查文件是否存在
+if [ ! -f "$FILE" ]; then
+    echo "Error: File $FILE not found."
+    exit 1
+fi
+
+# 使用 sed 修改 JSON 文件
+sed -i "s/\"pid\":\s*\"[^\"]*\"/\"pid\": \"$PID\"/" "$FILE"
+sed -i "s/\"uuid\":\s*\"[^\"]*\"/\"uuid\": \"$UUID\"/" "$FILE"
+sed -i "s/\"authkey\":\s*\"[^\"]*\"/\"authkey\": \"$AUTHKEY\"/" "$FILE"
+
+rm -rf /tuya/data/etc/tuya_*.db
+rm -rf /tuya/data/etc/tuya_*.db_bak
+rm -rf /tuya/data/etc/tuya_dp_cfg.json
+
+echo "Updated $FILE successfully."

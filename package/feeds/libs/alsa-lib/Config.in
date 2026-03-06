@@ -1,0 +1,217 @@
+# alsa package config
+
+menu "Configuration"
+	depends on PACKAGE_alsa-lib
+
+config ALSA_LIB_EXTRA_resmgr
+	bool "Compile to support resmgr"
+	default n
+	help
+	  resmgr -
+
+config ALSA_LIB_EXTRA_aload
+	bool "Support reading /dev/aload*"
+	default n
+	help
+	  aload -
+
+config ALSA_LIB_EXTRA_mixer
+	bool "Enable the mixer component"
+	default y
+	help
+	  mixer -
+
+config ALSA_LIB_EXTRA_pcm
+	bool "Enable the pcm component"
+	default y
+	help
+	  pcm -
+
+choice
+    prompt "compile pcm plugins"
+        depends on ALSA_LIB_EXTRA_pcm
+        default compile-all-pcm-plugins
+        help
+            choose compile pcm plugins
+        config compile-all-pcm-plugins
+            bool "all"
+        config custom-pcm-plugins
+            bool "custom"
+endchoice
+menu "Select PCM Plugins"
+    depends on custom-pcm-plugins
+    config ALSA_LIB_PCM_PLUGIN_copy
+        bool "Enable the pcm plugin copy"
+        default y
+        help
+          pcm plugin copy
+    config ALSA_LIB_PCM_PLUGIN_linear
+        bool "Enable the pcm plugin linear"
+        default y
+        help
+          pcm plugin linear
+    config ALSA_LIB_PCM_PLUGIN_route
+        bool "Enable the pcm plugin route"
+        default y
+        help
+          pcm plugin route
+    config ALSA_LIB_PCM_PLUGIN_mulaw
+        bool "Enable the pcm plugin mulaw"
+        default y
+        help
+          pcm plugin mulaw
+    config ALSA_LIB_PCM_PLUGIN_alaw
+        bool "Enable the pcm plugin alaw"
+        default y
+        help
+          pcm plugin alaw
+    config ALSA_LIB_PCM_PLUGIN_adpcm
+        bool "Enable the pcm plugin adpcm"
+        default y
+        help
+          pcm plugin adpcm
+    config ALSA_LIB_PCM_PLUGIN_rate
+        bool "Enable the pcm plugin rate"
+        default y
+        help
+          pcm plugin rate
+    config ALSA_LIB_PCM_PLUGIN_plug
+        bool "Enable the pcm plugin plug"
+        default y
+        help
+          pcm plugin plug
+    config ALSA_LIB_PCM_PLUGIN_multi
+        bool "Enable the pcm plugin multi"
+        default y
+        help
+          pcm plugin multi
+    config ALSA_LIB_PCM_PLUGIN_shm
+        bool "Enable the pcm plugin shm"
+        default y
+        help
+          pcm plugin shm
+    config ALSA_LIB_PCM_PLUGIN_file
+        bool "Enable the pcm plugin file"
+        default y
+        help
+          pcm plugin file
+    config ALSA_LIB_PCM_PLUGIN_null
+        bool "Enable the pcm plugin null"
+        default y
+        help
+          pcm plugin null
+    config ALSA_LIB_PCM_PLUGIN_empty
+        bool "Enable the pcm plugin empty"
+        default y
+        help
+          pcm plugin empty
+    config ALSA_LIB_PCM_PLUGIN_share
+        bool "Enable the pcm plugin share"
+        default y
+        help
+          pcm plugin share
+    config ALSA_LIB_PCM_PLUGIN_meter
+        bool "Enable the pcm plugin meter"
+        default y
+        help
+          pcm plugin meter
+    config ALSA_LIB_PCM_PLUGIN_hooks
+        bool "Enable the pcm plugin hooks"
+        default y
+        help
+          pcm plugin hooks
+    config ALSA_LIB_PCM_PLUGIN_lfloat
+        bool "Enable the pcm plugin lfloat"
+        default y
+        help
+          pcm plugin lfloat
+    config ALSA_LIB_PCM_PLUGIN_ladspa
+        bool "Enable the pcm plugin ladspa"
+        default y
+        help
+          pcm plugin ladspa
+    config ALSA_LIB_PCM_PLUGIN_dmix
+        bool "Enable the pcm plugin dmix"
+        default y
+        help
+          pcm plugin dmix
+    config ALSA_LIB_PCM_PLUGIN_dshare
+        bool "Enable the pcm plugin dshare"
+        default y
+        help
+          pcm plugin dshare
+    config ALSA_LIB_PCM_PLUGIN_dsnoop
+        bool "Enable the pcm plugin dsnoop"
+        default y
+        help
+          pcm plugin dsnoop
+    config ALSA_LIB_PCM_PLUGIN_asym
+        bool "Enable the pcm plugin asym"
+        default y
+        help
+          pcm plugin asym
+    config ALSA_LIB_PCM_PLUGIN_iec958
+        bool "Enable the pcm plugin iec958"
+        default y
+        help
+          pcm plugin iec958
+    config ALSA_LIB_PCM_PLUGIN_softvol
+        bool "Enable the pcm plugin softvol"
+        default y
+        help
+          pcm plugin softvol
+    config ALSA_LIB_PCM_PLUGIN_extplug
+        bool "Enable the pcm plugin extplug"
+        default y
+        help
+          pcm plugin extplug
+    config ALSA_LIB_PCM_PLUGIN_ioplug
+        bool "Enable the pcm plugin ioplug"
+        default y
+        help
+          pcm plugin ioplug
+    config ALSA_LIB_PCM_PLUGIN_mmap_emul
+        bool "Enable the pcm plugin mmap_emul"
+        default y
+        help
+          pcm plugin mmap_emul
+endmenu
+
+config ALSA_LIB_EXTRA_rawmidi
+	bool "Enable the raw MIDI component"
+	default n
+	help
+	 rawmidi -
+
+config ALSA_LIB_EXTRA_hwdep
+	bool "Enable the hwdep component"
+	default n
+	help
+	  hwdep -
+
+config ALSA_LIB_EXTRA_seq
+	bool "Enable the sequencer component"
+	default n
+	help
+	  seq -
+
+config ALSA_LIB_EXTRA_ucm
+	bool "Support use-case-manager component"
+	default n
+	help
+	  ucm -
+
+config ALSA_LIB_EXTRA_topology
+	bool "Enable the DSP topology component"
+	default n
+	help
+	  topology -
+
+config ALSA_LIB_EXTRA_alisp
+	bool "Enable the alisp component"
+	default n
+	help
+	  alisp -
+
+endmenu
+

@@ -1,0 +1,4 @@
+config  pragram "record"
+   list "record_on" "amixer -Dhw:audiocodec cset name='MIC Switch' 1"
+   list "record_off" "amixer -Dhw:audiocodec cset name='MIC Switch' 0"
+   list "record_vol" "amixer -Dhw:audiocodec cset name='MIC Gain'"

@@ -1,0 +1,112 @@
+From bb77f549c23d608a6a7708d47e79f20703e31f35 Mon Sep 17 00:00:00 2001
+From: chengweipeng <chengweipeng@allwinnertech.com>
+Date: Sat, 25 Feb 2023 13:48:31 +0800
+Subject: [PATCH] disable downfile
+
+Signed-off-by: chengweipeng <chengweipeng@allwinnertech.com>
+---
+ modules/face/CMakeLists.txt          | 30 ++++++++++++------------
+ modules/wechat_qrcode/CMakeLists.txt | 34 ++++++++++++++--------------
+ modules/xfeatures2d/CMakeLists.txt   |  6 +++--
+ 3 files changed, 36 insertions(+), 34 deletions(-)
+
+diff --git a/modules/face/CMakeLists.txt b/modules/face/CMakeLists.txt
+index 4616515..dc18a2a 100644
+--- a/modules/face/CMakeLists.txt
++++ b/modules/face/CMakeLists.txt
+@@ -10,18 +10,18 @@ ocv_define_module(face opencv_core
+ 
+ set(__commit_hash "8afa57abc8229d611c4937165d20e2a2d9fc5a12")
+ set(__file_hash "7505c44ca4eb54b4ab1e4777cb96ac05")
+-ocv_download(
+-    FILENAME face_landmark_model.dat
+-    HASH ${__file_hash}
+-    URL
+-      "${OPENCV_FACE_ALIGNMENT_URL}"
+-      "$ENV{OPENCV_FACE_ALIGNMENT_URL}"
+-      "https://raw.githubusercontent.com/opencv/opencv_3rdparty/${__commit_hash}/"
+-    DESTINATION_DIR "${CMAKE_BINARY_DIR}/${OPENCV_TEST_DATA_INSTALL_PATH}/cv/face/"
+-    ID "data"
+-    RELATIVE_URL
+-    STATUS res
+-)
+-if(NOT res)
+-  message(WARNING "Face: Can't get model file for face alignment.")
+-endif()
++#ocv_download(
++#    FILENAME face_landmark_model.dat
++#    HASH ${__file_hash}
++#    URL
++#      "${OPENCV_FACE_ALIGNMENT_URL}"
++#      "$ENV{OPENCV_FACE_ALIGNMENT_URL}"
++#      "https://raw.githubusercontent.com/opencv/opencv_3rdparty/${__commit_hash}/"
++#    DESTINATION_DIR "${CMAKE_BINARY_DIR}/${OPENCV_TEST_DATA_INSTALL_PATH}/cv/face/"
++#    ID "data"
++#    RELATIVE_URL
++#    STATUS res
++#)
++#if(NOT res)
++#  message(WARNING "Face: Can't get model file for face alignment.")
++#endif()
+diff --git a/modules/wechat_qrcode/CMakeLists.txt b/modules/wechat_qrcode/CMakeLists.txt
+index a15c433..4ab8525 100644
+--- a/modules/wechat_qrcode/CMakeLists.txt
++++ b/modules/wechat_qrcode/CMakeLists.txt
+@@ -21,20 +21,20 @@ set(hash_sr_prototxt "69db99927a70df953b471daaba03fbef")
+ set(model_types caffemodel prototxt)
+ set(model_names detect sr)
+ 
+-foreach(model_name ${model_names})
+-    foreach(model_type ${model_types})
+-        ocv_download(FILENAME ${model_name}.${model_type}
+-                        HASH ${hash_${model_name}_${model_type}}
+-                        URL
+-                        "${OPENCV_WECHAT_QRCODE_URL}"
+-                        "$ENV{OPENCV_WECHAT_QRCODE_URL}"
+-                        "https://raw.githubusercontent.com/WeChatCV/opencv_3rdparty/${wechat_qrcode_commit_hash}/"
+-                        DESTINATION_DIR "${CMAKE_BINARY_DIR}/downloads/wechat_qrcode"
+-                        ID "wechat_qrcode"
+-                        RELATIVE_URL
+-                        STATUS res)
+-        if(NOT res)
+-            message(WARNING "WeChatQRCode: Can't get ${model_name} ${model_type} file for wechat qrcode.")
+-        endif()
+-    endforeach()
+-endforeach()
++#foreach(model_name ${model_names})
++#    foreach(model_type ${model_types})
++#        ocv_download(FILENAME ${model_name}.${model_type}
++#                        HASH ${hash_${model_name}_${model_type}}
++#                        URL
++#                        "${OPENCV_WECHAT_QRCODE_URL}"
++#                        "$ENV{OPENCV_WECHAT_QRCODE_URL}"
++#                        "https://raw.githubusercontent.com/WeChatCV/opencv_3rdparty/${wechat_qrcode_commit_hash}/"
++#                        DESTINATION_DIR "${CMAKE_BINARY_DIR}/downloads/wechat_qrcode"
++#                        ID "wechat_qrcode"
++#                        RELATIVE_URL
++#                        STATUS res)
++#        if(NOT res)
++#            message(WARNING "WeChatQRCode: Can't get ${model_name} ${model_type} file for wechat qrcode.")
++#        endif()
++#    endforeach()
++#endforeach()
+diff --git a/modules/xfeatures2d/CMakeLists.txt b/modules/xfeatures2d/CMakeLists.txt
+index f30d2ed..2f278a7 100644
+--- a/modules/xfeatures2d/CMakeLists.txt
++++ b/modules/xfeatures2d/CMakeLists.txt
+@@ -9,8 +9,10 @@ if(NOT OPENCV_SKIP_FEATURES2D_DOWNLOADING)
+   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/download_vgg.cmake)
+   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/download_boostdesc.cmake)
+   set(DOWNLOAD_DIR "${OpenCV_BINARY_DIR}/downloads/xfeatures2d")
+-  download_boost_descriptors("${DOWNLOAD_DIR}" boost_status)
+-  download_vgg_descriptors("${DOWNLOAD_DIR}" vgg_status)
++#  download_boost_descriptors("${DOWNLOAD_DIR}" boost_status)
++#  download_vgg_descriptors("${DOWNLOAD_DIR}" vgg_status)
++  set(boost_status 1)
++  set(vgg_status 1)
+   if(boost_status)
+     ocv_append_source_file_compile_definitions(${CMAKE_CURRENT_SOURCE_DIR}/src/boostdesc.cpp "OPENCV_XFEATURES2D_HAS_BOOST_DATA=1")
+   else()
+-- 
+2.29.0
+

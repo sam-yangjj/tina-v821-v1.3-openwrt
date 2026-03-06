@@ -1,0 +1,15 @@
+spec:
+  name: bsp_verify
+  version: 1.0.1-beta.2
+  summary: embed module created by embedded-cli.
+  homepage: YOUR_HOMEPAGE
+  license:
+    type: MIT
+    file: LICENSE
+  author:
+    name: embedCI
+    email: embed@tuya.com
+  source:
+    git: https://code.registry.wgine.com/ci_bsp_group/bsp_verify.git
+    tag: 1.0.1-beta.2
+

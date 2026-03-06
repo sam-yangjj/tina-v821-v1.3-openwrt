@@ -1,0 +1,39 @@
+From 1fa2d2378797cdcc85859a4fda535124429663f1 Mon Sep 17 00:00:00 2001
+From: tangrongpdc <tangrongpdc@allwinnertech.com>
+Date: Thu, 13 Nov 2025 21:05:41 +0800
+Subject: [PATCH] fix write_destroy segmentfalut
+
+Signed-off-by: tangrongpdc <tangrongpdc@allwinnertech.com>
+---
+ src/shared/att.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/src/shared/att.c b/src/shared/att.c
+index 8f60b40..b1754f4 100644
+--- a/src/shared/att.c
++++ b/src/shared/att.c
+@@ -466,8 +466,11 @@ static bool timeout_cb(void *user_data)
+ static void write_watch_destroy(void *user_data)
+ {
+ 	struct bt_att_chan *chan = user_data;
+-
+-	chan->writer_active = false;
++	struct bt_att *att = chan->att;
++	if(chan != NULL)
++		chan->writer_active = false;
++	else
++		util_debug(att->debug_callback, att->debug_data, "chan is already NULL ,don't do anything");
+ }
+ 
+ static ssize_t bt_att_chan_write(struct bt_att_chan *chan, uint8_t opcode,
+@@ -600,6 +603,7 @@ static void disconn_handler(void *data, void *user_data)
+ static void bt_att_chan_free(void *data)
+ {
+ 	struct bt_att_chan *chan = data;
++	io_set_write_handler(chan->io, NULL, NULL, NULL);
+ 
+ 	if (chan->pending_req)
+ 		destroy_att_send_op(chan->pending_req);
+-- 
+2.25.1
+

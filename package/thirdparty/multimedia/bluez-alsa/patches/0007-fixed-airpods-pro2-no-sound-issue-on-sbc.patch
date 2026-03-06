@@ -1,0 +1,41 @@
+From b5a6d936ebdbe8168533703d3f292fca3f631ce2 Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Mon, 15 May 2023 20:30:14 +0800
+Subject: [PATCH] fixed airpods pro2 no sound issue
+
+---
+ src/a2dp-sbc.c | 2 +-
+ src/rtp.c      | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/a2dp-sbc.c b/src/a2dp-sbc.c
+index 951a592..3697619 100644
+--- a/src/a2dp-sbc.c
++++ b/src/a2dp-sbc.c
+@@ -180,7 +180,7 @@ static void *a2dp_sbc_enc_thread(struct ba_transport_thread *th) {
+ 			/* keep data transfer at a constant bit rate, also
+ 			 * get a timestamp for the next RTP frame */
+ 			asrsync_sync(&io.asrs, pcm_frames);
+-			timestamp += pcm_frames * 10000 / samplerate;
++			timestamp += pcm_frames;
+ 
+ 			/* update busy delay (encoding overhead) */
+ 			t->a2dp.pcm.delay = asrsync_get_busy_usec(&io.asrs) / 100;
+diff --git a/src/rtp.c b/src/rtp.c
+index 6164297..ccd4824 100644
+--- a/src/rtp.c
++++ b/src/rtp.c
+@@ -30,8 +30,8 @@ void *rtp_a2dp_init(void *s, rtp_header_t **hdr, void **phdr, size_t phdr_size)
+ 	memset(header, 0, RTP_HEADER_LEN + phdr_size);
+ 	header->paytype = 96;
+ 	header->version = 2;
+-	header->seq_number = random();
+-	header->timestamp = random();
++	header->seq_number = htobe16(0);
++	header->timestamp = htobe32(0);
+ 
+ 	uint8_t *data = (uint8_t *)&header->csrc[header->cc];
+ 
+-- 
+2.29.0
+

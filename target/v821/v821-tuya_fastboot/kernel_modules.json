@@ -1,0 +1,23 @@
+{
+	"status" : "disabled",
+	"core" : {
+		"base" : "0xd7800000",
+		"size" : "128M",
+		"core_space" : "240K",
+		"init_space" : "16K",
+		/*
+		 * kernel_build_dir para can also specified whih option '-k'
+		 * search_dir para can also specified whih option '-s'
+		 * output_dir para can also specified whih option '-o'
+		 */
+	},
+	"modules" : {
+		"v821_fmac.ko" : 0,
+		"videobuf2-memops.ko" : 1,
+		"videobuf2-dma-contig.ko" : 2,
+		"videobuf2-common.ko" : 3,
+		"vin_io.ko" : 4,
+		"videobuf2-v4l2.ko" : 5,
+		"vin_v4l2.ko" : 6
+	}
+}

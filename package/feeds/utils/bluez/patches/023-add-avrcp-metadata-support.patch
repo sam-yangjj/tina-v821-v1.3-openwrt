@@ -1,0 +1,128 @@
+From 8a5287d4c5353842e05f8d5049ab50402e7cab49 Mon Sep 17 00:00:00 2001
+From: caizepeng <caizepeng@allwinnertech.com>
+Date: Mon, 7 Aug 2023 10:57:49 +0800
+Subject: [PATCH] add avrcp metadata support.
+
+Signed-off-by: caizepeng <caizepeng@allwinnertech.com>
+---
+ profiles/audio/avrcp.c | 90 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 90 insertions(+)
+
+diff --git a/profiles/audio/avrcp.c b/profiles/audio/avrcp.c
+index fa3aff6..1ab8f2f 100644
+--- a/profiles/audio/avrcp.c
++++ b/profiles/audio/avrcp.c
+@@ -193,6 +193,19 @@ struct get_folder_items_rsp {
+ 	uint8_t data[0];
+ } __attribute__ ((packed));
+ 
++struct item_media_attr {
++	uint32_t attr;
++	uint16_t charset;
++	uint16_t len;
++	uint8_t data[0];
++} __attribute__ ((packed));
++
++struct get_item_attributes_rsp {
++	uint8_t status;
++	uint8_t number;
++	uint8_t data[0];
++} __attribute__ ((packed));
++
+ struct folder_item {
+ 	uint8_t type;
+ 	uint16_t len;
+@@ -1982,6 +1995,82 @@ static void avrcp_handle_get_folder_items(struct avrcp *session,
+ 
+ 	return;
+ 
++failed:
++	pdu->params[0] = status;
++	pdu->param_len = htons(1);
++}
++static void avrcp_handle_item_attributes(struct avrcp *session,
++				struct avrcp_browsing_header *pdu,
++				uint32_t start_item, uint32_t end_item)
++{
++	struct avrcp_player *player = session->target->player;
++	struct get_item_attributes_rsp *rsp;
++
++	rsp = (void *)pdu->params;
++	rsp->status = AVRCP_STATUS_SUCCESS;
++	pdu->param_len = sizeof(*rsp);
++
++	for (int i = AVRCP_MEDIA_ATTRIBUTE_TITLE; i <= AVRCP_MEDIA_ATTRIBUTE_LAST; i++) {
++		struct item_media_attr *item = (void *)&pdu->params[pdu->param_len];
++		char *meta_data_str = player_get_metadata(player, i);
++		if (meta_data_str == NULL) continue;
++
++		rsp->number++;
++		put_be32(i, &item->attr);
++		item->len = strlen(meta_data_str);
++		memcpy(item->data, meta_data_str, item->len);
++		item->charset = htons(AVRCP_CHARSET_UTF8);
++		pdu->param_len += sizeof(item) + item->len;
++		item->len = htons(item->len);
++	}
++	pdu->param_len = htons(pdu->param_len);
++
++	return;
++
++failed:
++	pdu->params[0] = AVRCP_STATUS_OUT_OF_BOUNDS;
++	pdu->param_len = htons(1);
++	return;
++}
++
++static void avrcp_handle_get_item_attributes(struct avrcp *session,
++				struct avrcp_browsing_header *pdu,
++				uint8_t transaction)
++{
++	uint64_t item_uid;
++	uint32_t end_item = 0;
++	uint8_t scope;
++	uint8_t status = AVRCP_STATUS_SUCCESS;
++	uint16_t uid_count = 0;
++	uint8_t number_of_attribute = 0;
++
++	if (ntohs(pdu->param_len) < 12) {
++		status = AVRCP_STATUS_INVALID_PARAM;
++		goto failed;
++	}
++
++	scope = pdu->params[0];
++
++	item_uid = bt_get_be64(&pdu->params[1]);
++	uid_count = bt_get_be16(&pdu->params[9]);
++	number_of_attribute = pdu->params[11];
++
++	DBG("scope 0x%02x item_uid=%X uid_count=%d number_of_attribute=%d",
++			scope, item_uid, uid_count, number_of_attribute);
++
++	switch (scope) {
++	case AVRCP_SCOPE_NOW_PLAYING:
++		DBG("AVRCP_SCOPE_NOW_PLAYING");
++		avrcp_handle_item_attributes(session, pdu,
++						0,0);
++		return;
++	default:
++		status = AVRCP_STATUS_INVALID_PARAM;
++		goto failed;
++	}
++
++	return;
++
+ failed:
+ 	pdu->params[0] = status;
+ 	pdu->param_len = htons(1);
+@@ -1993,6 +2082,7 @@ static struct browsing_pdu_handler {
+ 							uint8_t transaction);
+ } browsing_handlers[] = {
+ 		{ AVRCP_GET_FOLDER_ITEMS, avrcp_handle_get_folder_items },
++		{ AVRCP_GET_ITEM_ATTRIBUTES, avrcp_handle_get_item_attributes},
+ 		{ },
+ };
+ 
+-- 
+2.29.0
+

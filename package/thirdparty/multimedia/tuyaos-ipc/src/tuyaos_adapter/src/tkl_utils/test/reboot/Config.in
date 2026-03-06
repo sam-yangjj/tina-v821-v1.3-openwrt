@@ -1,0 +1,4 @@
+
+config TY_TKL_UTILS_TEST_REBOOT
+	bool "TKL - reboot test"
+	default n

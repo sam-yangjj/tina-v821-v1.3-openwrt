@@ -1,0 +1,26 @@
+From e73a5276436bf31f1fa83af5cb439e338b70e1bb Mon Sep 17 00:00:00 2001
+From: chengweipeng <chengweipeng@allwinnertech.com>
+Date: Wed, 8 Dec 2021 14:05:23 +0800
+Subject: [PATCH] fix bk.ver error
+
+Signed-off-by: chengweipeng <chengweipeng@allwinnertech.com>
+---
+ src/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/Makefile b/src/Makefile
+index 2555014..8aa1341 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -228,7 +228,7 @@ testmake: $(SRCS) $(UTILS) # used by scripts/make to test gmake
+ 	install install-target dist get edit get-e clean clobber \
+ 	share depend testmake
+ 
+-$O/lmbench : ../scripts/lmbench bk.ver
++$O/lmbench : ../scripts/lmbench
+ 	rm -f $O/lmbench
+ 	sed -e "s/<version>/`cat bk.ver`/g" < ../scripts/lmbench > $O/lmbench
+ 	chmod +x $O/lmbench
+-- 
+2.29.0
+

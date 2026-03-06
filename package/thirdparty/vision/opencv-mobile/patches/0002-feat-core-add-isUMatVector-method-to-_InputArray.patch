@@ -1,0 +1,46 @@
+From 0ece7fc8ba8deabc50de5420d1240b26f6b225c2 Mon Sep 17 00:00:00 2001
+From: zhangyuanjing <zhangyuanjing@allwinnertech.com>
+Date: Thu, 20 Nov 2025 13:03:32 +0800
+Subject: [PATCH] feat(core): add isUMatVector method to _InputArray
+
+Add method to check if input array is a vector of UMat objects
+---
+ modules/core/include/opencv2/core/mat.hpp     | 2 ++
+ modules/core/include/opencv2/core/mat.inl.hpp | 1 +
+ 2 files changed, 3 insertions(+)
+
+diff --git a/modules/core/include/opencv2/core/mat.hpp b/modules/core/include/opencv2/core/mat.hpp
+index 866b5ae..821ba10 100644
+--- a/modules/core/include/opencv2/core/mat.hpp
++++ b/modules/core/include/opencv2/core/mat.hpp
+@@ -175,6 +175,7 @@ public:
+ #if OPENCV_ABI_COMPATIBILITY < 500
+         EXPR              = 6 << KIND_SHIFT,  //!< removed: https://github.com/opencv/opencv/pull/17046
+ #endif
++        STD_VECTOR_UMAT   =11 << KIND_SHIFT,
+         STD_BOOL_VECTOR   =12 << KIND_SHIFT,
+ #if OPENCV_ABI_COMPATIBILITY < 500
+         STD_ARRAY         =14 << KIND_SHIFT,  //!< removed: https://github.com/opencv/opencv/issues/18897
+@@ -231,6 +232,7 @@ public:
+     size_t step(int i=-1) const;
+     bool isMat() const;
+     bool isMatVector() const;
++    bool isUMatVector() const;
+     bool isMatx() const;
+     bool isVector() const;
+     ~_InputArray();
+diff --git a/modules/core/include/opencv2/core/mat.inl.hpp b/modules/core/include/opencv2/core/mat.inl.hpp
+index 32c70c2..a5e41d7 100644
+--- a/modules/core/include/opencv2/core/mat.inl.hpp
++++ b/modules/core/include/opencv2/core/mat.inl.hpp
+@@ -172,6 +172,7 @@ inline Mat _InputArray::getMat(int i) const
+ 
+ inline bool _InputArray::isMat() const { return kind() == _InputArray::MAT; }
+ inline bool _InputArray::isMatVector() const { return kind() == _InputArray::STD_VECTOR_MAT; }
++inline bool _InputArray::isUMatVector() const  { return kind() == _InputArray::STD_VECTOR_UMAT; }
+ inline bool _InputArray::isMatx() const { return kind() == _InputArray::MATX; }
+ inline bool _InputArray::isVector() const { return kind() == _InputArray::STD_VECTOR ||
+                                                    kind() == _InputArray::STD_BOOL_VECTOR ||
+-- 
+2.25.1
+

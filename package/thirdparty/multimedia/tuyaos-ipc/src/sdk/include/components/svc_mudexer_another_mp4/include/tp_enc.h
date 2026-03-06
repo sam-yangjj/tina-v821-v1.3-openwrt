@@ -1,0 +1,91 @@
+#ifndef _TP_ENC_H_
+#define _TP_ENC_H_
+
+typedef enum tp_encode_type_e
+{
+	TP_ENCODE_TYPE_VIDEO_MIN = 0,
+	TP_ENCODE_TYPE_VIDEO_H264 = TP_ENCODE_TYPE_VIDEO_MIN,
+	TP_ENCODE_TYPE_VIDEO_H265,
+	TP_ENCODE_TYPE_VIDEO_MAX = TP_ENCODE_TYPE_VIDEO_H265,
+
+	TP_ENCODE_TYPE_SNAPSHOT_MIN,
+	TP_ENCODE_TYPE_SNAPSHOT_MJPEG = TP_ENCODE_TYPE_SNAPSHOT_MIN,
+	TP_ENCODE_TYPE_SNAPSHOT_JPEG,
+	TP_ENCODE_TYPE_SNAPSHOT_MAX = TP_ENCODE_TYPE_SNAPSHOT_JPEG,
+
+	TP_ENCODE_TYPE_AUDIO_MIN,
+	TP_ENCODE_TYPE_AUDIO_PCM = TP_ENCODE_TYPE_AUDIO_MIN,
+	TP_ENCODE_TYPE_AUDIO_G711A,
+	TP_ENCODE_TYPE_AUDIO_G711U,
+	TP_ENCODE_TYPE_AUDIO_G726,
+	TP_ENCODE_TYPE_AUDIO_ADPCM,
+	TP_ENCODE_TYPE_AUDIO_MAX = TP_ENCODE_TYPE_AUDIO_ADPCM,
+
+	TP_ENCODE_TYPE_MAX = TP_ENCODE_TYPE_AUDIO_MAX,
+}TP_ENCODE_TYPE_E;
+
+#define STREAM_TYPE_UNDEFINE        0X00
+#define STREAM_TYPE_VIDEO_MPEG1     0x01
+#define STREAM_TYPE_VIDEO_MPEG2     0x02
+#define STREAM_TYPE_AUDIO_MPEG1     0x03
+#define STREAM_TYPE_AUDIO_MPEG2     0x04
+#define STREAM_TYPE_PRIVATE_SECTION 0x05
+#define STREAM_TYPE_PRIVATE_DATA    0x06
+#define STREAM_TYPE_AUDIO_AAC_ADTS  0x0f
+#define STREAM_TYPE_AUDIO_AAC_LATM  0x11
+#define STREAM_TYPE_AUDIO_G711A     0x90
+#define STREAM_TYPE_AUDIO_G711U     0x91
+#define STREAM_TYPE_AUDIO_WAVEHEAD  0x92
+#define STREAM_TYPE_AUDIO_G726      0x96
+#define STREAM_TYPE_AUDIO_ADPCM     0x9C
+#define STREAM_TYPE_VIDEO_MPEG4     0x10
+#define STREAM_TYPE_VIDEO_H264      0x1b
+#define STREAM_TYPE_VIDEO_H265      0x24
+#define STREAM_TYPE_AUDIO_AC3       0x81
+#define STREAM_TYPE_AUDIO_DTS       0x8a
+
+#define PARSE_FINISH 1
+
+// NALU类型，外部找到的定义
+typedef enum{
+	NALU_TYPE_SLICE    = 1,
+	NALU_TYPE_DPA      = 2,
+	NALU_TYPE_DPB      = 3,
+	NALU_TYPE_DPC      = 4,
+	NALU_TYPE_IDR      = 5,
+	NALU_TYPE_SEI      = 6,
+	NALU_TYPE_SPS      = 7,
+	NALU_TYPE_PPS      = 8,
+	NALU_TYPE_AUD      = 9,
+	NALU_TYPE_EOSEQ    = 10,
+	NALU_TYPE_EOSTREAM = 11,
+	NALU_TYPE_FILL     = 12,
+#if (MVC_EXTENSION_ENABLE)
+	NALU_TYPE_PREFIX   = 14,
+	NALU_TYPE_SUB_SPS  = 15,
+	NALU_TYPE_SLC_EXT  = 20,
+	NALU_TYPE_VDRD     = 24  // View and Dependency Representation Delimiter NAL Unit
+#endif
+} NALU_TYPE_E;
+
+
+typedef long long	DDWORD;
+
+typedef struct frame_head
+{
+       DDWORD timestamp;//us
+       unsigned int data_len;
+       unsigned char evt_sn;
+       unsigned int stream_id;
+       unsigned int stream_type;
+       unsigned int naluType;
+       unsigned int reserve0;
+       unsigned int reserve1;
+}__attribute__ ((aligned(4))) FRAME_HEAD_S, *PTR_FRAME_HEAD_S;
+
+typedef struct {
+    FRAME_HEAD_S head;
+    char* data;
+} TP_FRAME_S;
+
+#endif

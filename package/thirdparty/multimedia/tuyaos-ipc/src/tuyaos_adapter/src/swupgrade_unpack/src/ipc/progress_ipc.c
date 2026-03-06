@@ -1,0 +1,82 @@
+/*
+ * (C) Copyright 2020
+ * Cheng Lei, Tuya Software Engineering, chenglei@tuya.com.
+ */
+
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdbool.h>
+
+#include "progress_ipc.h"
+
+char *SOCKET_PROGRESS_PATH = NULL;
+
+#define SOCKET_PROGRESS_DEFAULT  "swupdateprog"
+
+char *get_prog_socket(void)
+{
+	if (!SOCKET_PROGRESS_PATH || !strlen(SOCKET_PROGRESS_PATH)) {
+		const char *tmpdir = getenv("TMPDIR");
+		if (!tmpdir)
+			tmpdir = "/tmp";
+
+		if (asprintf(&SOCKET_PROGRESS_PATH, "%s/%s", tmpdir,
+					SOCKET_PROGRESS_DEFAULT) == -1)
+			return (char *)"/tmp/"SOCKET_PROGRESS_DEFAULT;
+	}
+
+	return SOCKET_PROGRESS_PATH;
+}
+
+static int _progress_ipc_connect(const char *socketpath, bool reconnect)
+{
+	struct sockaddr_un servaddr;
+	int fd = socket(AF_LOCAL, SOCK_STREAM, 0);
+	bzero(&servaddr, sizeof(servaddr));
+	servaddr.sun_family = AF_LOCAL;
+	strncpy(servaddr.sun_path, socketpath, sizeof(servaddr.sun_path));
+
+	fprintf(stdout, "Trying to connect to swupgrade...\n");
+
+	do {
+		if (connect(fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) == 0) {
+			break;
+		}
+		if (!reconnect) {
+			fprintf(stderr, "cannot communicate with swupgrade via %s\n",
+					socketpath);
+			return -1;
+		}
+		usleep(10000);
+	} while (true);
+
+	fprintf(stdout, "Connected to swupgrade via %s\n", socketpath);
+
+	return fd;
+}
+
+int progress_ipc_connect_with_path(const char *socketpath, bool reconnect)
+{
+	return _progress_ipc_connect(socketpath, reconnect);
+}
+
+int progress_ipc_connect(bool reconnect)
+{
+	return _progress_ipc_connect(get_prog_socket(), reconnect);
+}
+
+int progress_ipc_receive(int *connfd, struct progress_msg *msg)
+{
+	int ret = read(*connfd, msg, sizeof(*msg));
+	if (ret != sizeof(*msg)) {
+		fprintf(stdout, "Connection closing..\n");
+		close(*connfd);
+		*connfd = -1;
+		return -1;
+	}
+	return ret;
+}

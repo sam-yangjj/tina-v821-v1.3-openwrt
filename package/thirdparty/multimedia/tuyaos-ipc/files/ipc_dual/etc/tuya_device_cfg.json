@@ -1,0 +1,10 @@
+{
+	"pid":"u1uftc6swpaohai4",
+	"uuid": "uuid86b6c878f410d017",
+	"authkey": "wtVYQpZtg2EffXUkUImfeA9EhJ9Ms86O",
+	"storage": "/etc/",
+	"media_path": "/etc/",
+	"sd_path": "/mnt/extsd/",
+	"upgrade_file": "/tmp/upgrade.file",
+	"app_version": "0.0.0"
+}

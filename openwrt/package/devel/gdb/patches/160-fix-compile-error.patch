@@ -1,0 +1,57 @@
+Index: gdb-12.1/gdb/nat/riscv-linux-tdesc.c
+===================================================================
+--- gdb-12.1.orig/gdb/nat/riscv-linux-tdesc.c
++++ gdb-12.1/gdb/nat/riscv-linux-tdesc.c
+@@ -26,6 +26,14 @@
+ 
+ #include <sys/uio.h>
+ 
++#ifndef ELF_NGREG
++#define ELF_NGREG       NGREG
++#endif
++
++#ifndef ELF_NFPREG
++#define ELF_NFPREG       NFPREG
++#endif
++
+ /* Work around glibc header breakage causing ELF_NFPREG not to be usable.  */
+ #ifndef NFPREG
+ # define NFPREG 33
+Index: gdb-12.1/gdb/riscv-linux-nat.c
+===================================================================
+--- gdb-12.1.orig/gdb/riscv-linux-nat.c
++++ gdb-12.1/gdb/riscv-linux-nat.c
+@@ -29,6 +29,14 @@
+ 
+ #include <sys/ptrace.h>
+ 
++#ifndef ELF_NGREG
++#define ELF_NGREG       NGREG
++#endif
++
++#ifndef ELF_NFPREG
++#define ELF_NFPREG       NFPREG
++#endif
++
+ /* Work around glibc header breakage causing ELF_NFPREG not to be usable.  */
+ #ifndef NFPREG
+ # define NFPREG 33
+Index: gdb-12.1/gdbserver/linux-riscv-low.cc
+===================================================================
+--- gdb-12.1.orig/gdbserver/linux-riscv-low.cc
++++ gdb-12.1/gdbserver/linux-riscv-low.cc
+@@ -26,6 +26,14 @@
+ #include "opcode/riscv.h"
+ 
+ /* Work around glibc header breakage causing ELF_NFPREG not to be usable.  */
++#ifndef ELF_NGREG
++#define ELF_NGREG       NGREG
++#endif
++
++#ifndef ELF_NFPREG
++#define ELF_NFPREG       NFPREG
++#endif
++
+ #ifndef NFPREG
+ # define NFPREG 33
+ #endif

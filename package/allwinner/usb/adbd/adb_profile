@@ -1,0 +1,4 @@
+#!/bin/sh
+. /etc/profile
+alias ls='ls --color=no'
+[ -x /bin/ll ] || alias ll='ls -al'

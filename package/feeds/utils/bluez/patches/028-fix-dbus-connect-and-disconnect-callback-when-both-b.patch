@@ -1,0 +1,38 @@
+From 8a76f75a4bb610c021fe44f141749e19955e4033 Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Sun, 4 Feb 2024 11:03:14 +0800
+Subject: [PATCH] fix dbus connect and disconnect callback when both bt ble
+
+---
+ src/device.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/device.c b/src/device.c
+index 69f98e4..c298f36 100644
+--- a/src/device.c
++++ b/src/device.c
+@@ -2816,8 +2816,8 @@ void device_add_connection(struct btd_device *dev, uint8_t bdaddr_type)
+ 
+ 	state->connected = true;
+ 
+-	if (dev->le_state.connected && dev->bredr_state.connected)
+-		return;
++	// if (dev->le_state.connected && dev->bredr_state.connected)
++	// 	return;
+ 
+ 	g_dbus_emit_property_changed(dbus_conn, dev->path, DEVICE_INTERFACE,
+ 								"Connected");
+@@ -2861,8 +2861,8 @@ void device_remove_connection(struct btd_device *device, uint8_t bdaddr_type)
+ 							"Paired");
+ 	}
+ 
+-	if (device->bredr_state.connected || device->le_state.connected)
+-		return;
++	// if (device->bredr_state.connected || device->le_state.connected)
++	// 	return;
+ 
+ 	g_dbus_emit_property_changed(dbus_conn, device->path,
+ 						DEVICE_INTERFACE, "Connected");
+-- 
+2.29.0
+

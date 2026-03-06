@@ -1,0 +1,51 @@
+{
+    "OsVersion": "3.10.16",
+    "SDKType": "2",
+    "package": {
+        "MainPackage": {
+            "Name": "tuyaos-ipc_6.2.16_v821_musl_linux_fs_0.0.3.tar.gz"
+        },
+        "Packages": []
+    },
+    "toolchain_pack_url": "https://airtake-public-data-1254153901.cos.ap-shanghai.myqcloud.com/smart/embed/pruduct/v821_musl_0.0.3.zip",
+    "AblityValue": {
+        "EmbAbt_ENABLE_BT_NETCFG": "true",
+        "EmbAbt_ENABLE_WIFI_PEGASUS": "false",
+        "EmbAbt_ENABLE_WIFI_FFS": "false",
+        "EmbAbt_ENABLE_WIFI_QRCODE": "false",
+        "EmbAbt_ENABLE_QRCODE_ACTIVE": "true",
+        "EmbAbt_ENABLE_BT_SERVICE": "true",
+        "EmbAbt_ENABLE_BT_ACTIVE": "false",
+        "EmbAbt_ENABLE_TUYA_LAN": "true",
+        "EmbAbt_ENABLE_BT_CTRL": "false",
+        "EmbAbt_ENABLE_WIFI_FFC": "false",
+        "EmbAbt_ENABLE_WIFI_AP": "true",
+        "EmbAbt_ENABLE_WIFI_EZ": "false",
+        "EmbAbt_ENABLE_BT_REMOTE_CTRL": "false",
+        "EmbAbt_ENABLE_ASTRO_TIMER": "false",
+        "EmbAbt_ENABLE_CALENDAR_TIMER": "false",
+        "EmbAbt_ENABLE_BT_TIMER": "false",
+        "EmbAbt_ENABLE_WIFI_PROTECT": "true",
+        "EmbAbt_ENABLE_HOMEKIT": "false",
+        "EmbAbt_ENABLE_MATTER": "false",
+        "EmbAbt_ENABLE_WEBSOCKET": "false",
+        "EmbAbt_ENABLE_LWIP": "false",
+        "EmbAbt_ENABLE_HOSTAPD": "false",
+        "EmbAbt_ENABLE_TUYA_BLE_STACK": "false",
+        "EmbAbt_ENABLE_KV_PROTECTED": "true",
+        "EmbAbt_ENABLE_RTSP_SERVER": "false",
+        "EmbAbt_ENABLE_LOCAL_KEY_UPDATE": "false",
+        "EmbAbt_ENABLE_DEVICE_DATA_COLLECT": "false",
+        "EmbAbt_ENABLE_COMMUNICATE_PRIORITY": "false",
+        "EmbAbt_ENABLE_MATOP": "false",
+        "EmbAbt_ENABLE_WIFI_5G": "false",
+        "EmbAbt_ENABLE_IPv6": "false",
+        "EmbAbt_TUYA_SECURITY_LEVEL": "TUYA_SECURITY_LEVEL_1",
+        "EmbAbt_ENABLE_MSS": "false",
+        "EmbAbt_ENABLE_WIFI_COUNTRY_CODE_V2": "false",
+        "EmbAbt_ENABLE_AI_TEXT": "false",
+        "EmbAbt_ENABLE_AI_IMAGE": "false",
+        "EmbAbt_ENABLE_AI_AUDIO": "false",
+        "EmbAbt_ENABLE_AI_VIDEO": "false"
+    }
+}

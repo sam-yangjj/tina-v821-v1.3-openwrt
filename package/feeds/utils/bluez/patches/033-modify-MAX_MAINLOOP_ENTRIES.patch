@@ -1,0 +1,25 @@
+From 77cd2613bbebc4d2b1df791ee64e49bb56e6a3f9 Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Tue, 19 Nov 2024 16:46:56 +0800
+Subject: [PATCH] modify MAX_MAINLOOP_ENTRIES
+
+---
+ src/shared/mainloop.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/shared/mainloop.c b/src/shared/mainloop.c
+index 8a8e2c0..ec60c6c 100644
+--- a/src/shared/mainloop.c
++++ b/src/shared/mainloop.c
+@@ -57,7 +57,7 @@ struct mainloop_data {
+ 	void *user_data;
+ };
+ 
+-#define MAX_MAINLOOP_ENTRIES 128
++#define MAX_MAINLOOP_ENTRIES 256
+ 
+ static struct mainloop_data *mainloop_list[MAX_MAINLOOP_ENTRIES];
+ 
+-- 
+2.29.0
+

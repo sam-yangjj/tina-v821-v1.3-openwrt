@@ -1,0 +1,6 @@
+config CHATBOX_XIAOZHI_DISPLAY
+	bool "enable display"
+	default n
+	depends on PACKAGE_chatbox_xiaozhi
+		help
+		Whether use lvgl ui

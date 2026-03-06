@@ -1,0 +1,3 @@
+ISP_SRC_IN_CBB:=y
+ISP_LIB_USE_IN_MPP:=y
+ISP_DIR:=isp_mpp/isp_v821

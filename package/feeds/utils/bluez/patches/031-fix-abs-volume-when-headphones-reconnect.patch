@@ -1,0 +1,81 @@
+From 1cff065ffeddc4829d72c2db32975342a53df4b7 Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Wed, 29 May 2024 09:39:42 +0800
+Subject: [PATCH] fix ads volume when headphones reconnect
+
+---
+ profiles/audio/transport.c | 20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
+ mode change 100644 => 100755 profiles/audio/transport.c
+
+diff --git a/profiles/audio/transport.c b/profiles/audio/transport.c
+old mode 100644
+new mode 100755
+index 5d47e80..ff79d68
+--- a/profiles/audio/transport.c
++++ b/profiles/audio/transport.c
+@@ -114,6 +114,8 @@ struct media_transport {
+ 	void			*data;
+ };
+ 
++static uint8_t record_volume = -1; /*to solve receive volume before transport set up*/
++
+ static GSList *transports = NULL;
+ 
+ static const char *state2str(transport_state_t state)
+@@ -634,7 +636,7 @@ static gboolean volume_exists(const GDBusPropertyTable *property, void *data)
+ 	struct media_transport *transport = data;
+ 	struct a2dp_transport *a2dp = transport->data;
+ 
+-	return a2dp->volume <= 127;
++	return (a2dp->volume <= 127 || record_volume <= 127);
+ }
+ 
+ static gboolean get_volume(const GDBusPropertyTable *property,
+@@ -643,6 +645,10 @@ static gboolean get_volume(const GDBusPropertyTable *property,
+ 	struct media_transport *transport = data;
+ 	struct a2dp_transport *a2dp = transport->data;
+ 
++	if (record_volume <= 127 ) {
++		a2dp->volume = record_volume;
++		record_volume = -1;
++	}
+ 	dbus_message_iter_append_basic(iter, DBUS_TYPE_UINT16, &a2dp->volume);
+ 
+ 	return TRUE;
+@@ -750,6 +756,8 @@ static void media_transport_free(void *data)
+ {
+ 	struct media_transport *transport = data;
+ 
++	record_volume = -1;
++
+ 	transports = g_slist_remove(transports, transport);
+ 
+ 	if (transport->owner)
+@@ -977,6 +985,7 @@ void media_transport_update_device_volume(struct btd_device *dev,
+ 								uint8_t volume)
+ {
+ 	GSList *l;
++	bool find_transport_sep = false;
+ 
+ 	if (dev == NULL)
+ 		return;
+@@ -987,7 +996,14 @@ void media_transport_update_device_volume(struct btd_device *dev,
+ 			continue;
+ 
+ 		/* Volume is A2DP only */
+-		if (media_endpoint_get_sep(transport->endpoint))
++		if (media_endpoint_get_sep(transport->endpoint)) {
++			find_transport_sep = true;
++			record_volume = -1;
+ 			media_transport_update_volume(transport, volume);
++		}
++	}
++	if (find_transport_sep == false) {
++		error("no find transport, record volume");
++		record_volume = volume;
+ 	}
+ }
+-- 
+2.29.0
+

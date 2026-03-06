@@ -1,0 +1,4 @@
+
+config TY_TKL_UTILS_TEST_PASSWD
+	bool "TKL - passwd test"
+	default n

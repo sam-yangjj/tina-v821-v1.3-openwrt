@@ -1,0 +1,9 @@
+if PACKAGE_mpp_keyword_spotting_test
+
+config COPY_KWS_TEST_TO_ROOTFS
+	bool "Copy kws_test binary to rootfs"
+	default y
+	help
+	  This will install the kws_test binary to /bin directory in the root filesystem.
+
+endif

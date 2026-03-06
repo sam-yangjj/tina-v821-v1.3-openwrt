@@ -1,0 +1,27 @@
+From 41b2a7b49ad4f6e641dd6043f8c712569bf8fb94 Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Wed, 3 Jan 2024 15:42:23 +0800
+Subject: [PATCH] remove link key when auth failed
+
+---
+ src/adapter.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/adapter.c b/src/adapter.c
+index 2f65bb8..1e30464 100644
+--- a/src/adapter.c
++++ b/src/adapter.c
+@@ -7522,6 +7522,10 @@ static void auth_failed_callback(uint16_t index, uint16_t length,
+ 		return;
+ 	}
+ 
++	if (ev->addr.type == BDADDR_BREDR) {
++		DBG("remove link key for the next connection");
++		btd_adapter_remove_bonding(adapter, &ev->addr.bdaddr, BDADDR_BREDR);
++	}
+ 	bonding_attempt_complete(adapter, &ev->addr.bdaddr, ev->addr.type,
+ 								ev->status);
+ }
+-- 
+2.29.0
+

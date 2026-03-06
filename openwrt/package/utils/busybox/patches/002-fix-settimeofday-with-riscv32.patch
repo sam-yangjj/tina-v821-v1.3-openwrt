@@ -1,0 +1,22 @@
+Index: busybox-1.33.2/util-linux/hwclock.c
+===================================================================
+--- busybox-1.33.2.orig/util-linux/hwclock.c
++++ busybox-1.33.2/util-linux/hwclock.c
+@@ -137,12 +137,15 @@ static void set_kernel_tz(const struct t
+	 * if we gratuitously break stuff" :(
+	 */
+ #if !defined(SYS_settimeofday) && defined(SYS_settimeofday_time32)
+-# define SYS_settimeofday SYS_settimeofday_time32
+-#endif
++	int ret = syscall(SYS_settimeofday_time32, NULL, tz);
++#elif defined(SYS_settimeofday)
+	int ret = syscall(SYS_settimeofday, NULL, tz);
+ #else
+	int ret = settimeofday(NULL, tz);
+ #endif
++#else
++	int ret = settimeofday(NULL, tz);
++#endif
+	if (ret)
+		bb_simple_perror_msg_and_die("settimeofday");
+ }

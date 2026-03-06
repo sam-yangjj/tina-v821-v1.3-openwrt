@@ -1,0 +1,134 @@
+software =
+{
+    version = "0.1.0";
+    description = "Firmware update for Tina Project";
+
+    stable = {
+
+        /* now in sdnand or nor system, we need to upgrade nor system(bootA, rootfsA, riscv0, nor boot0, sdnand userA) */
+        nor = {
+            images: (
+                {
+                    filename = "kernel";
+                    device = "/dev/mtdblock3";
+                    installed-directly = true;
+                },
+                {
+                    filename = "rootfs";
+                    device = "/dev/mtdblock5";
+                    installed-directly = true;
+                },
+                {
+                    filename = "riscv";
+                    device = "/dev/mtdblock4";
+                    installed-directly = true;
+                },
+                {
+                    filename = "user";
+                    device = "/dev/mmcblk0p13";
+                    installed-directly = true;
+                },
+                {
+                    filename = "boot0";
+                    device = "/dev/mtdblock0";
+                    installed-directly = true;
+                }
+            );
+
+            scripts: (
+                {
+                    filename = "preinstall_nor.sh";
+                    type = "preinstall";
+                },
+                {
+                    filename = "postinstall_nor.sh";
+                    type = "postinstall";
+                }
+            );
+
+            bootenv: (
+                {
+                    name = "swu_mode";
+                    value = "";
+                /*},
+                {
+                    name = "swu_next";
+                    value = "reboot";*/
+                }
+            );
+        };
+
+        /* now in sdnand or nor system, we need to upgrade sdnand system(bootA, rootfsA, riscv0, userB, sdnand boot0) */
+        sdnand = {
+            images: (
+                {
+                    filename = "kernel_sdnand";
+                    device = "/dev/mmcblk0p4";
+                    installed-directly = true;
+                },
+                {
+                    filename = "rootfs_sdnand";
+                    device = "/dev/mmcblk0p9";
+                    installed-directly = true;
+                },
+                {
+                    filename = "riscv_sdnand";
+                    device = "/dev/mmcblk0p7";
+                    installed-directly = true;
+                },
+                {
+                    filename = "user";
+                    device = "/dev/mmcblk0p14";
+                    installed-directly = true;
+                },
+                /*{
+                    filename = "uboot_sdnand";
+                    type = "awuboot";
+                },*/
+                {
+                    filename = "boot0_sdnand";
+                    type = "awboot0";
+                }
+            );
+
+            scripts: (
+                {
+                    filename = "preinstall_sdnand.sh";
+                    type = "preinstall";
+                }
+            );
+
+            bootenv: (
+                {
+                    name = "swu_mode";
+                    value = "";
+                /*},
+                {
+                    name = "swu_next";
+                    value = "reboot";*/
+                }
+            );
+        };
+    };
+
+    /* when not call with -e xxx,xxx    just clean */
+    bootenv: (
+        {
+            name = "swu_param";
+            value = "";
+        },
+        {
+            name = "swu_software";
+            value = "";
+        },
+        {
+            name = "swu_mode";
+            value = "";
+        },
+        {
+            name = "swu_version";
+            value = "";
+        }
+    );
+
+}

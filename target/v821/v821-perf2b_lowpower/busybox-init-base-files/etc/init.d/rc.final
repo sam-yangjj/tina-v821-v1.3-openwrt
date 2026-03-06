@@ -1,0 +1,60 @@
+#!/bin/sh
+
+echo "------run rc.final file-----"
+
+export LD_LIBRARY_PATH=/usr/lib/eyesee-mpp:/usr/lib/pdet:${LD_LIBRARY_PATH}
+export TERM=xterm
+
+ulimit -c unlimited
+echo /mnt/extsd/coredump-%e-%p-%s-%t > /proc/sys/kernel/core_pattern
+
+for i in /etc/init.d/S??* ;do
+
+     # Ignore dangling symlinks (if any).
+     [ ! -f "$i" ] && continue
+
+     case "$i" in
+    *.sh)
+        # Source shell script for speed.
+        (
+        trap - INT QUIT TSTP
+        set start
+        . $i
+        )
+        ;;
+    *)
+        # No sh extension, so fork subprocess.
+        $i start
+        ;;
+    esac
+done
+
+if [ -z "$(grep '\<vfat\>' /proc/mounts)" ]; then
+    ! /bin/mount -t vfat /dev/mmcblk0 /mnt/extsd 2>/dev/null &&
+    /bin/mount -t vfat /dev/mmcblk0p1 /mnt/extsd
+    if [ $? -eq 0 ]; then
+	if [ -f "/usr/sbin/fsck.fat" ]; then
+		echo "===start of fix sd card=="
+		#umout sd card for fix card
+		/bin/umount /mnt/extsd
+		#fix card
+		/usr/sbin/fsck.fat -y /dev/mmcblk0p1
+		#remount sd card
+		/bin/mount -t vfat /dev/mmcblk0p1 /mnt/extsd
+		echo "===end of fix sd card=="
+	fi
+    fi
+fi
+
+mount -t debugfs none /sys/kernel/debug
+insmod /etc/awbase.ko
+
+echo "start mv stream..."
+ls /tmp/
+rm -rf /mnt/extsd/stream*.h264
+#rm -rf /mnt/extsd/data*.jpg
+mv -f /tmp/stream*.h264 /mnt/extsd/
+#mv /tmp/data*.jpg /mnt/extsd/
+echo "---/mnt/extsd/---"
+ls /mnt/extsd/
+

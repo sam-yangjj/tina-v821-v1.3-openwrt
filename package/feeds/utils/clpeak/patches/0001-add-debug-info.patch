@@ -1,0 +1,46 @@
+From 6809a25e1bec93fc356502a4e8e7ee385a8ab443 Mon Sep 17 00:00:00 2001
+From: chengweipeng <chengweipeng@allwinnertech.com>
+Date: Thu, 13 Jul 2023 16:15:22 +0800
+Subject: [PATCH] add debug info
+
+Signed-off-by: chengweipeng <chengweipeng@allwinnertech.com>
+---
+ src/clpeak.cpp | 6 ++++++
+ src/common.cpp | 4 ++--
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/src/clpeak.cpp b/src/clpeak.cpp
+index 8cb192b..88cf905 100644
+--- a/src/clpeak.cpp
++++ b/src/clpeak.cpp
+@@ -83,6 +83,12 @@ int clPeak::runAll()
+         log->print(TAB TAB "Compute units   : ");
+         log->print(devInfo.numCUs);
+         log->print(NEWLINE);
++        log->print(TAB TAB "MaxAllocSize   : ");
++        log->print((unsigned int)devInfo.maxAllocSize);
++        log->print(NEWLINE);
++        log->print(TAB TAB "MaxGlobalSize   : ");
++        log->print((unsigned int)devInfo.maxGlobalSize);
++        log->print(NEWLINE);
+         log->print(TAB TAB "Clock frequency : ");
+         log->print(devInfo.maxClockFreq);
+         log->print(" MHz" NEWLINE);
+diff --git a/src/common.cpp b/src/common.cpp
+index b024398..a349a38 100644
+--- a/src/common.cpp
++++ b/src/common.cpp
+@@ -32,8 +32,8 @@ device_info_t getDeviceInfo(cl::Device &d)
+     devInfo.maxWGSize = std::min(devInfo.maxWGSize, (uint)128);
+   }
+ 
+-  devInfo.maxAllocSize = static_cast<uint64_t>(d.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>());
+-  devInfo.maxGlobalSize = static_cast<uint64_t>(d.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>());
++  devInfo.maxAllocSize = SUNXI_CL_DEVICE_MAX_MEM_ALLOC_SIZE_MB * 1024 * 1024;
++  devInfo.maxGlobalSize = SUNXI_CL_DEVICE_GLOBAL_MEM_SIZE_MB * 1024 * 1024;
+   devInfo.maxClockFreq = static_cast<uint>(d.getInfo<CL_DEVICE_MAX_CLOCK_FREQUENCY>());
+   devInfo.doubleSupported = false;
+   devInfo.halfSupported = false;
+-- 
+2.25.1
+

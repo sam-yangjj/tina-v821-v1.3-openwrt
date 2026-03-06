@@ -1,0 +1,12 @@
+config OPENCV_AWISPAPI
+	bool "Sunxi VIN libAwIspApi support"
+	select libisp_build_libispapi
+	default n
+	help
+		Select this to add support for libAwIspApi support vin driver.
+
+config OPENCV_OPENMP
+	bool "OpenMP support"
+	default n
+	help
+		Select this to add support for OpenMP parallelization.

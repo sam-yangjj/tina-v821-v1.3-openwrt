@@ -1,0 +1,30 @@
+From bff410ec80dad49713ace3bdd6990ae1867f5f61 Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Wed, 12 Apr 2023 15:49:32 +0800
+Subject: [PATCH] fix compilation issues when enable debug
+
+---
+ src/ba-transport.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/src/ba-transport.c b/src/ba-transport.c
+index bafea69..9ba4d4d 100644
+--- a/src/ba-transport.c
++++ b/src/ba-transport.c
+@@ -1482,9 +1482,10 @@ void ba_transport_thread_cleanup(struct ba_transport_thread *th) {
+ #if DEBUG
+ 	/* XXX: If the order of the cleanup push is right, this function will
+ 	 *      indicate the end of the transport IO thread. */
+-	char name[32];
+-	pthread_getname_np(th->id, name, sizeof(name));
+-	debug("Exiting IO thread [%s]: %s", name, ba_transport_type_to_string(t->type));
++	// char name[32];
++	// pthread_getname_np(th->id, name, sizeof(name));
++	// debug("Exiting IO thread [%s]: %s", name, ba_transport_type_to_string(t->type));
++	debug("Exiting IO thread");
+ #endif
+ 
+ 	/* Reset transport IO thread state back to NONE. */
+-- 
+2.29.0
+

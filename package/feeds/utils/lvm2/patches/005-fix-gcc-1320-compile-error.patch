@@ -1,0 +1,12 @@
+diff -Naur LVM2.2.03.11/libdm/dm-tools/Makefile.in LVM2.2.03.11-new/libdm/dm-tools/Makefile.in
+--- LVM2.2.03.11/libdm/dm-tools/Makefile.in	2021-01-08 17:10:11.000000000 +0800
++++ LVM2.2.03.11-new/libdm/dm-tools/Makefile.in	2025-03-22 14:48:11.001864694 +0800
+@@ -48,7 +48,7 @@
+ CFLAGS_dmsetup.o += $(UDEV_CFLAGS) $(EXTRA_EXEC_CFLAGS)
+ CFLAGS_dmfilemapd.o += $(EXTRA_EXEC_CFLAGS)
+ LDFLAGS += -L$(interfacebuilddir)
+-DMLIBS = -ldevmapper
++DMLIBS = -ldevmapper -lm
+ 
+ dmsetup: dmsetup.o
+ 	@echo "    [CC] $@"

@@ -1,0 +1,33 @@
+From c5b4cdc40fff0887c05745c5ccdf72190573e299 Mon Sep 17 00:00:00 2001
+From: tangrongpdc <tangrongpdc@allwinnertech.com>
+Date: Tue, 19 Aug 2025 13:50:04 +0800
+Subject: [PATCH 2/2] swap bluez judge bdaddr_type order
+
+Signed-off-by: tangrongpdc <tangrongpdc@allwinnertech.com>
+---
+ src/device.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/device.c b/src/device.c
+index c298f36..822d2cc 100644
+--- a/src/device.c
++++ b/src/device.c
+@@ -1921,12 +1921,12 @@ static uint8_t select_conn_bearer(struct btd_device *dev)
+ 			le_last = NVAL_TIME;
+ 	}
+ 
+-	if (le_last == NVAL_TIME && bredr_last == NVAL_TIME)
+-		return dev->bdaddr_type;
+-
+ 	if (dev->bredr && (!dev->le || le_last == NVAL_TIME))
+ 		return BDADDR_BREDR;
+ 
++	if (le_last == NVAL_TIME && bredr_last == NVAL_TIME)
++		return dev->bdaddr_type;
++
+ 	if (dev->le && (!dev->bredr || bredr_last == NVAL_TIME))
+ 		return dev->bdaddr_type;
+ 
+-- 
+2.25.1
+

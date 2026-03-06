@@ -1,0 +1,178 @@
+From 47dcf616a1e8cb77a846ee06244a051666f178ca Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Tue, 25 Oct 2022 20:12:35 +0800
+Subject: [PATCH] update xr819s hciattach support download sdd
+
+---
+ tools/hciattach_xradio.c | 52 +++++++++++++++++++++++++++++++++++-----
+ tools/hcitool.c          | 42 ++++++++++++++++++++++++++++++++
+ 2 files changed, 88 insertions(+), 6 deletions(-)
+
+diff --git a/tools/hciattach_xradio.c b/tools/hciattach_xradio.c
+index b64f402..c1451c8 100755
+--- a/tools/hciattach_xradio.c
++++ b/tools/hciattach_xradio.c
+@@ -57,6 +57,8 @@ typedef struct {
+ 	uint32_t id;
+ 	const char *name;
+ 	const char *fw_name;
++	const char *rfkill_name;
++	const char *sdd_name;
+ 	uint32_t addr_load;
+ 	uint32_t addr_run;
+ 	uint32_t second_junp;
+@@ -71,8 +73,8 @@ typedef struct {
+ } detection_cfg_t;
+ 
+ static detection_cfg_t detection_cfg[] = {
+-	[XR829] = {XR829,  "xr829",  "/lib/firmware/fw_xr829_bt.bin",  0x0, 	 0x0,	   0x0, 0x0, 0x0, 1, 1, 1, 1, 1, 1},
+-	[XR819S] ={XR819S, "xr819s", "/lib/firmware/fw_xr819s_bt.bin", 0x201000, 0x201101, 0x0, 0x0, 0x0, 1, 1, 1, 0, 0, 1},
++	[XR829] = {XR829,  "xr829",  "/lib/firmware/fw_xr829_bt.bin", "sunxi-bt",  NULL, 0x0, 0x0, 0x0, 0x0, 0x0, 1, 1, 1, 1, 1, 1},
++	[XR819S] ={XR819S, "xr819s", "/lib/firmware/fw_xr819s_bt.bin", "sunxi-wireless", "/lib/firmware/sdd_xr819s.bin", 0x201000, 0x201101, 0x0, 0x226000, 0x0, 1, 1, 1, 0, 1, 1},
+ };
+ 
+ #ifndef XR_BT_CONF_PATH_NAME
+@@ -893,7 +895,7 @@ static void proc_enable_hci(int fd)
+ 	return;
+ }
+ 
+-static int init_rfkill(void)
++static int init_rfkill(const char *name)
+ {
+ 	char path[64];
+ 	char buf[16];
+@@ -901,7 +903,7 @@ static int init_rfkill(void)
+ 
+ 	for (id = 0; ; id++)
+ 	{
+-		snprintf(path, sizeof(path), "/sys/class/rfkill/rfkill%d/type", id);
++		snprintf(path, sizeof(path), "/sys/class/rfkill/rfkill%d/name", id);
+ 		fd = open(path, O_RDONLY);
+ 		if (fd < 0)
+ 		{
+@@ -913,7 +915,7 @@ static int init_rfkill(void)
+ 		sz = read(fd, &buf, sizeof(buf));
+ 		close(fd);
+ 
+-		if (sz >= 9 && memcmp(buf, "bluetooth", 9) == 0)
++		if (sz >= strlen(name) && memcmp(buf, name, strlen(name)) == 0)
+ 		{
+ 			rfkill_id = id;
+ 			break;
+@@ -1494,6 +1496,44 @@ static int load_btfirmware(int type, int fd)
+ 	free(data);
+ 	fclose(fwfile_fd);
+ 	printf("load firmware done.\n");
++
++	if (detection_cfg[type].sdd_name) {
++		printf("now load sdd\n");
++		fwfile_fd = fopen(detection_cfg[type].sdd_name, "rb");
++		if(!fwfile_fd) {
++			printf("[%s] open firmware file failed.\n", __FUNCTION__);
++			return -1;
++		}
++
++		printf("[%s] open sdd file success. loading...\n", __FUNCTION__);
++		addr = detection_cfg[type].addr_sdd;
++		fseek(fwfile_fd, 0, SEEK_END);
++		filesize = ftell(fwfile_fd);
++		fseek(fwfile_fd, 0, SEEK_SET);
++		len = filesize;
++		len = len > SZ_1K ? SZ_1K : len;
++		data = (unsigned char*)malloc(len);
++		if (data == NULL) {
++			printf("failed to alloc %d byte memory\n", len);
++			fclose(fwfile_fd);
++			return -1;
++		}
++
++		com_stream_write(fd, addr, 4, (unsigned char *)&len);
++		addr += 4;
++		do {
++			len = filesize;
++			len = (len > SZ_1K) ? SZ_1K : len;
++			fread(data, 1, len, fwfile_fd);
++			com_stream_write(fd, addr, len, data);
++			addr += len;
++			filesize -= len;
++		} while(filesize);
++		free(data);
++		fclose(fwfile_fd);
++		printf("load sdd done.\n");
++	}
++
+ 	/* jump */
+ 	printf("jump:\n");
+ 	com_set_pc(fd, detection_cfg[type].addr_run);
+@@ -1512,7 +1552,7 @@ static int xradio_init(int type, int fd, int def_speed, int speed, struct termio
+ {
+ 	printf("xradio_init\n");
+ 
+-	if (init_rfkill())
++	if (init_rfkill(detection_cfg[type].rfkill_name))
+ 		return -1;
+ 
+ 	if (upio_set_bluetooth_power(UPIO_BT_POWER_OFF))
+diff --git a/tools/hcitool.c b/tools/hcitool.c
+index 9250c41..0ae5aae 100644
+--- a/tools/hcitool.c
++++ b/tools/hcitool.c
+@@ -2305,6 +2305,47 @@ static void cmd_clock(int dev_id, int argc, char **argv)
+ 	hci_close_dev(dd);
+ }
+ 
++static void cmd_off(int dev_id, int argc, char **argv)
++{
++	struct hci_filter flt;
++	int opt, dd;
++	uint16_t ocf;
++	uint8_t ogf;
++	uint8_t buf[1] = { 0 };
++
++	dev_id = hci_get_route(NULL);
++
++	dd = hci_open_dev(dev_id);
++	if (dd < 0) {
++		perror("HCI device open failed");
++		exit(1);
++	}
++
++	ogf = 0x3F;
++	ocf = 0x19;
++
++	dd = hci_open_dev(dev_id);
++	if (dd < 0) {
++		perror("Device open failed");
++		exit(EXIT_FAILURE);
++	}
++
++	/* Setup filter */
++	hci_filter_clear(&flt);
++	hci_filter_set_ptype(HCI_EVENT_PKT, &flt);
++	hci_filter_all_events(&flt);
++	if (setsockopt(dd, SOL_HCI, HCI_FILTER, &flt, sizeof(flt)) < 0) {
++		perror("HCI filter setup failed");
++		exit(EXIT_FAILURE);
++	}
++
++	if (hci_send_cmd(dd, ogf, ocf, 1, buf) < 0) {
++		perror("Send failed");
++		exit(EXIT_FAILURE);
++	}
++	hci_close_dev(dd);
++}
++
+ static int read_flags(uint8_t *flags, const uint8_t *data, size_t size)
+ {
+ 	size_t offset;
+@@ -3405,6 +3446,7 @@ static struct {
+ 	{ "key",      cmd_key,     "Change connection link key"           },
+ 	{ "clkoff",   cmd_clkoff,  "Read clock offset"                    },
+ 	{ "clock",    cmd_clock,   "Read local or remote clock"           },
++	{ "off",      cmd_off,     "System off"                           },
+ 	{ "lescan",   cmd_lescan,  "Start LE scan"                        },
+ 	{ "leinfo",   cmd_leinfo,  "Get LE remote information"            },
+ 	{ "lewladd",  cmd_lewladd, "Add device to LE White List"          },
+-- 
+2.29.0
+

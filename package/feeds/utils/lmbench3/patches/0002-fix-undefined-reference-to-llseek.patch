@@ -1,0 +1,29 @@
+From e345568a7dad29918a3e93a1db598265a269c582 Mon Sep 17 00:00:00 2001
+From: anruliu <anruliu@allwinnertech.com>
+Date: Thu, 7 Mar 2024 18:43:42 +0800
+Subject: [PATCH] fix undefined reference to llseek
+
+Signed-off-by: anruliu <anruliu@allwinnertech.com>
+---
+ src/disk.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/disk.c b/src/disk.c
+index c3f1154..dc96e34 100644
+--- a/src/disk.c
++++ b/src/disk.c
+@@ -289,9 +289,9 @@ int
+ seekto(int fd, uint64 off)
+ {
+ #ifdef	__linux__
+-	extern	loff_t llseek(int, loff_t, int);
++	extern	loff_t lseek64(int, loff_t, int);
+ 
+-	if (llseek(fd, (loff_t)off, SEEK_SET) == (loff_t)-1) {
++	if (lseek64(fd, (loff_t)off, SEEK_SET) == (loff_t)-1) {
+ 		return(-1);
+ 	}
+ 	return (0);
+-- 
+2.29.0
+

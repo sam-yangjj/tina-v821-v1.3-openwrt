@@ -1,0 +1,12 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006-2011 OpenWrt.org
+
+START=9
+STOP=98
+
+boot() {
+	[ -f /etc/config/mods.dep ] || echo "missing mods.dep file" > /dev/console
+
+	[ -f /etc/config/mods.dep ] && \
+			/usr/sbin/parallel_insmod /etc/config/mods.dep /lib/modules/$(uname -r)
+}

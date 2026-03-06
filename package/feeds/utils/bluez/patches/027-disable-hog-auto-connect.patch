@@ -1,0 +1,25 @@
+From da352ee7304893ff59f4c8f5eb92a2282ee7ebe1 Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Fri, 2 Feb 2024 11:38:20 +0800
+Subject: [PATCH] disable hog auto connect
+
+---
+ profiles/input/hog.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/profiles/input/hog.c b/profiles/input/hog.c
+index dfac689..babb1a6 100644
+--- a/profiles/input/hog.c
++++ b/profiles/input/hog.c
+@@ -218,7 +218,7 @@ static struct btd_profile hog_profile = {
+ 	.device_remove	= hog_remove,
+ 	.accept		= hog_accept,
+ 	.disconnect	= hog_disconnect,
+-	.auto_connect	= true,
++	.auto_connect	= false,
+ };
+ 
+ static int hog_init(void)
+-- 
+2.29.0
+

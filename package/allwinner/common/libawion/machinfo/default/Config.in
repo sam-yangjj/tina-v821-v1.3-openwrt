@@ -1,0 +1,15 @@
+if PACKAGE_libawion
+
+choice
+prompt "choose ion alloc method"
+    default AW_ION_ALLOC_IOMMU
+    help
+      select default physical memory type to apply
+config AW_ION_ALLOC_IOMMU
+    bool "aw_ion_alloc_iommu"
+config AW_ION_ALLOC_CMA
+    bool "aw_ion_alloc_cma"
+endchoice
+
+endif
+

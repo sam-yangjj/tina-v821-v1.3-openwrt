@@ -1,0 +1,56 @@
+From 6f5b6daa3eae772c5abbc3bae30d71cb2ac6c7af Mon Sep 17 00:00:00 2001
+From: liujialin <liujialin@allwinnertech.com>
+Date: Fri, 6 Jan 2023 10:08:27 +0800
+Subject: [PATCH] Subject: [PATCH] bt mac preferentially use addr_mgt. Solve
+ the previous patch file is overwritten.
+
+Signed-off-by: liujialin <liujialin@allwinnertech.com>
+---
+ tools/hciattach_xradio.c | 22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/tools/hciattach_xradio.c b/tools/hciattach_xradio.c
+index b64f402..67ed379 100755
+--- a/tools/hciattach_xradio.c
++++ b/tools/hciattach_xradio.c
+@@ -79,6 +79,10 @@ static detection_cfg_t detection_cfg[] = {
+ #define XR_BT_CONF_PATH_NAME "/etc/bluetooth/xr_bt.conf"
+ #endif
+
++#ifndef ADDR_MGT_BT_PATH_NAME
++#define ADDR_MGT_BT_PATH_NAME "/sys/class/addr_mgt/addr_bt"
++#endif
++
+ #define UNUSED(x)	(void)(x)
+
+ #define SHOW_LOG		0
+@@ -792,10 +796,26 @@ static int xradio_generate_bdaddr(unsigned char *buf)
+	int fd;
+	FILE* conf_fd = NULL;
+	unsigned mac_hex;
+-	int i = 12; /* from MSB to LSB*/
++	int i; /* from MSB to LSB*/
++	int addr_bt_fd;
++	bdaddr_t bdaddr;
++	char addr_bt[18] = {'\0'};
++
++	addr_bt_fd = open(ADDR_MGT_BT_PATH_NAME, O_RDWR);
++	if (addr_bt_fd > 0) {
++		read(addr_bt_fd, addr_bt, sizeof(addr_bt) - 1);
++		str2ba(addr_bt, &bdaddr);
++		for (i = 12; i >= 7; i--) {
++			buf[i] = bdaddr.b[i-7];
++		}
++		close(addr_bt_fd);
++		if (check_bdaddr_valid(buf))
++			return 0;
++	}
+
+	conf_fd = fopen(XR_BT_CONF_PATH_NAME, "r");
+	if(conf_fd) {
++		i = 12;
+		fscanf(conf_fd, "%x", &mac_hex);
+		while (!feof(conf_fd)) {
+			buf[i--] = mac_hex;
+--
+2.29.0

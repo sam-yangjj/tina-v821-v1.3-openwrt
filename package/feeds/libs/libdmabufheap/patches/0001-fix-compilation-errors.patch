@@ -1,0 +1,138 @@
+From 57de82e7da842e0147aae86f338c7d85a5461e70 Mon Sep 17 00:00:00 2001
+From: anruliu <anruliu@allwinnertech.com>
+Date: Thu, 5 Jan 2023 11:42:38 +0800
+Subject: [PATCH] fix compilation errors
+
+Signed-off-by: anruliu <anruliu@allwinnertech.com>
+---
+ BufferAllocator.cpp                       | 28 +++++++++++++++++------
+ include/BufferAllocator/BufferAllocator.h |  8 +++----
+ 2 files changed, 25 insertions(+), 11 deletions(-)
+
+diff --git a/BufferAllocator.cpp b/BufferAllocator.cpp
+index 6dc3f68..c999182 100644
+--- a/BufferAllocator.cpp
++++ b/BufferAllocator.cpp
+@@ -26,15 +26,29 @@
+ #include <linux/ion_4.12.h>
+ #include <stdlib.h>
+ #include <sys/types.h>
++#include <sys/ioctl.h>
+ #include <unistd.h>
+ 
+-#include <shared_mutex>
++#include <mutex>
+ #include <string>
+ #include <unordered_set>
+ 
+ #include <android-base/logging.h>
+ #include <android-base/unique_fd.h>
+ 
++#ifndef TEMP_FAILURE_RETRY
++/* Evaluate EXPRESSION, and repeat as long as it returns -1 with `errno'
++   set to EINTR.  */
++
++# define TEMP_FAILURE_RETRY(expression) \
++  (__extension__                                                              \
++    ({ long int __result;                                                     \
++       do __result = (long int) (expression);                                 \
++       while (__result == -1L && errno == EINTR);                             \
++       __result; }))
++
++#endif
++
+ static constexpr char kDmaHeapRoot[] = "/dev/dma_heap/";
+ static constexpr char kIonDevice[] = "/dev/ion";
+ static constexpr char kIonSystemHeapName[] = "ion_system_heap";
+@@ -47,7 +61,7 @@ void BufferAllocator::LogInterface(const std::string& interface) {
+ }
+ 
+ int BufferAllocator::OpenDmabufHeap(const std::string& heap_name) {
+-    std::shared_lock<std::shared_mutex> slock(dmabuf_heap_fd_mutex_);
++    std::unique_lock<std::mutex> slock(dmabuf_heap_fd_mutex_);
+ 
+     /* Check if heap has already been opened. */
+     auto it = dmabuf_heap_fds_.find(heap_name);
+@@ -60,7 +74,7 @@ int BufferAllocator::OpenDmabufHeap(const std::string& heap_name) {
+      * Heap device needs to be opened, use a unique_lock since dmabuf_heap_fd_
+      * needs to be modified.
+      */
+-    std::unique_lock<std::shared_mutex> ulock(dmabuf_heap_fd_mutex_);
++    std::unique_lock<std::mutex> ulock(dmabuf_heap_fd_mutex_);
+ 
+     /*
+      * Check if we already opened this heap again to prevent racing threads from
+@@ -121,7 +135,7 @@ int BufferAllocator::MapNameToIonMask(const std::string& heap_name, unsigned int
+         return -EINVAL;
+     IonHeapConfig heap_config = { ion_heap_mask, ion_heap_flags };
+ 
+-    std::unique_lock<std::shared_mutex> ulock(heap_name_to_config_mutex_);
++    std::unique_lock<std::mutex> ulock(heap_name_to_config_mutex_);
+     heap_name_to_config_[heap_name] = heap_config;
+     return 0;
+ }
+@@ -149,7 +163,7 @@ int BufferAllocator::MapNameToIonName(const std::string& heap_name,
+     unsigned int ion_heap_mask = 1 << ion_heap_id;
+     IonHeapConfig heap_config = { ion_heap_mask, ion_heap_flags };
+ 
+-    std::unique_lock<std::shared_mutex> ulock(heap_name_to_config_mutex_);
++    std::unique_lock<std::mutex> ulock(heap_name_to_config_mutex_);
+     heap_name_to_config_[heap_name] = heap_config;
+ 
+     return 0;
+@@ -180,7 +194,7 @@ int BufferAllocator::MapNameToIonHeap(const std::string& heap_name,
+ int BufferAllocator::GetIonConfig(const std::string& heap_name, IonHeapConfig& heap_config) {
+     int ret = 0;
+ 
+-    std::shared_lock<std::shared_mutex> slock(heap_name_to_config_mutex_);
++    std::unique_lock<std::mutex> slock(heap_name_to_config_mutex_);
+ 
+     auto it = heap_name_to_config_.find(heap_name);
+     if (it != heap_name_to_config_.end()) {
+@@ -199,7 +213,7 @@ int BufferAllocator::GetIonConfig(const std::string& heap_name, IonHeapConfig& h
+             heap_config.mask = 1 << heap_id;
+             heap_config.flags = 0;
+             /* save it so that this lookup does not need to happen again */
+-            std::unique_lock<std::shared_mutex> ulock(heap_name_to_config_mutex_);
++            std::unique_lock<std::mutex> ulock(heap_name_to_config_mutex_);
+             heap_name_to_config_[heap_name] = heap_config;
+         }
+     }
+diff --git a/include/BufferAllocator/BufferAllocator.h b/include/BufferAllocator/BufferAllocator.h
+index edc3143..60d1a54 100644
+--- a/include/BufferAllocator/BufferAllocator.h
++++ b/include/BufferAllocator/BufferAllocator.h
+@@ -26,12 +26,12 @@
+ #include <sys/types.h>
+ 
+ #include <cstdint>
+-#include <shared_mutex>
++#include <mutex>
+ #include <string>
+ #include <unordered_map>
+ #include <unordered_set>
+ #include <vector>
+-
++#include <functional>
+ 
+ class BufferAllocator {
+   public:
+@@ -201,7 +201,7 @@ class BufferAllocator {
+     /* Stores all open dmabuf_heap handles. */
+     std::unordered_map<std::string, android::base::unique_fd> dmabuf_heap_fds_;
+     /* Protects dma_buf_heap_fd_ from concurrent access */
+-    std::shared_mutex dmabuf_heap_fd_mutex_;
++    std::mutex dmabuf_heap_fd_mutex_;
+ 
+     /* saved handle to /dev/ion. */
+     android::base::unique_fd ion_fd_;
+@@ -223,5 +223,5 @@ class BufferAllocator {
+     /* stores a map of dmabuf heap names to equivalent ion heap configurations. */
+     std::unordered_map<std::string, struct IonHeapConfig> heap_name_to_config_;
+     /* protects heap_name_to_config_ from concurrent access */
+-    std::shared_mutex heap_name_to_config_mutex_;
++    std::mutex heap_name_to_config_mutex_;
+ };
+-- 
+2.25.1
+

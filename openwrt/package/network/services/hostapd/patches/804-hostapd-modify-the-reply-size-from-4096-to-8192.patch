@@ -1,0 +1,40 @@
+From ff4b5c320da5f5d164c52f6cec2e1fac20f57af1 Mon Sep 17 00:00:00 2001
+From: liujialin <liujialin@allwinnertech.com>
+Date: Thu, 26 Oct 2023 15:23:43 +0800
+Subject: [PATCH] hostapd: modify the reply size from 4096 to 8192
+
+Signed-off-by: liujialin <liujialin@allwinnertech.com>
+---
+ wpa_supplicant/ctrl_iface.c | 2 +-
+ wpa_supplicant/wpa_cli.c    | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/wpa_supplicant/ctrl_iface.c b/wpa_supplicant/ctrl_iface.c
+index 4e07a43..d592755 100644
+--- a/wpa_supplicant/ctrl_iface.c
++++ b/wpa_supplicant/ctrl_iface.c
+@@ -10319,7 +10319,7 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
+ 					 char *buf, size_t *resp_len)
+ {
+ 	char *reply;
+-	const int reply_size = 4096;
++	const int reply_size = 8192;
+ 	int reply_len;
+ 
+ 	if (os_strncmp(buf, WPA_CTRL_RSP, os_strlen(WPA_CTRL_RSP)) == 0 ||
+diff --git a/wpa_supplicant/wpa_cli.c b/wpa_supplicant/wpa_cli.c
+index f70c42f..a20263a 100644
+--- a/wpa_supplicant/wpa_cli.c
++++ b/wpa_supplicant/wpa_cli.c
+@@ -236,7 +236,7 @@ static void wpa_cli_msg_cb(char *msg, size_t len)
+ 
+ static int _wpa_ctrl_command(struct wpa_ctrl *ctrl, const char *cmd, int print)
+ {
+-	char buf[4096];
++	char buf[8192];
+ 	size_t len;
+ 	int ret;
+ 
+-- 
+2.29.0
+

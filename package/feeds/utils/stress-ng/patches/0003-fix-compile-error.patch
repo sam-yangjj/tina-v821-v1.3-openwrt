@@ -1,0 +1,55 @@
+From 1146c3c6844966db9eb0ba51b02d1ca0230d957d Mon Sep 17 00:00:00 2001
+From: liuchenyang <liuchenyang@allwinnertech.com>
+Date: Thu, 23 Mar 2023 16:04:22 +0800
+Subject: [PATCH]  fix compile error
+
+---
+ stress-ng.h      | 8 --------
+ stress-pthread.c | 4 ----
+ 2 files changed, 12 deletions(-)
+
+diff --git a/stress-ng.h b/stress-ng.h
+index 61d62c4..340916c 100644
+--- a/stress-ng.h
++++ b/stress-ng.h
+@@ -512,10 +512,6 @@
+ #include <linux/if_tun.h>
+ #endif
+ 
+-#if defined(HAVE_LINUX_IO_URING_H)
+-#include <linux/io_uring.h>
+-#endif
+-
+ #if defined(HAVE_LINUX_FIEMAP_H)
+ #include <linux/fiemap.h>
+ #endif
+@@ -524,10 +520,6 @@
+ #include <linux/filter.h>
+ #endif
+ 
+-#if defined(HAVE_LINUX_FS_H)
+-#include <linux/fs.h>
+-#endif
+-
+ #if defined(HAVE_LINUX_FSVERITY_H)
+ #include <linux/fsverity.h>
+ #endif
+diff --git a/stress-pthread.c b/stress-pthread.c
+index c3663fa..2edb785 100644
+--- a/stress-pthread.c
++++ b/stress-pthread.c
+@@ -400,11 +400,7 @@ static int stress_pthread(const stress_args_t *args)
+ 	stress_pthread_args_t pargs = { args, NULL, 0 };
+ 	sigset_t set;
+ #if defined(HAVE_PTHREAD_ATTR_SETSTACK)
+-#if DEFAULT_STACK_MIN == PTHREAD_STACK_MIN
+-	const size_t stack_size = PTHREAD_STACK_MIN;
+-#else
+ 	const size_t stack_size = STRESS_MAXIMUM(DEFAULT_STACK_MIN, PTHREAD_STACK_MIN);
+-#endif
+ #endif
+ 
+ 	keep_running_flag = true;
+-- 
+2.29.0
+

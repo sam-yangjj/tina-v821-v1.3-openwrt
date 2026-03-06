@@ -1,0 +1,15 @@
+if PACKAGE_audio-process-common-lib
+choice
+prompt "Choose sunxi audio driver version"
+	default AUDIO_PROCESS_SUNXI_AUDIO_ONE
+	help
+	Select the sunxi audio driver version for audio process.
+	There's difference between version 1 and version 2 such as controls and sound devices.
+
+config AUDIO_PROCESS_SUNXI_AUDIO_ONE
+	bool "Audio Driver V1"
+config AUDIO_PROCESS_SUNXI_AUDIO_TWO
+	bool "Audio Driver V2"
+endchoice
+
+endif

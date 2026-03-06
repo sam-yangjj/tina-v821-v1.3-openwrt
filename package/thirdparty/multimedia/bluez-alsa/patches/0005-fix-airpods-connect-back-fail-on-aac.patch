@@ -1,0 +1,44 @@
+From 9781fd9990c49ec90f3dcfee2522f1296c9fbc4e Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Wed, 12 Apr 2023 15:18:01 +0800
+Subject: [PATCH] fix airpods connect back fail on aac
+
+---
+ src/a2dp-aac.c | 3 +++
+ src/a2dp.c     | 6 +++++-
+ 2 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/src/a2dp-aac.c b/src/a2dp-aac.c
+index 5270a39..73b059e 100644
+--- a/src/a2dp-aac.c
++++ b/src/a2dp-aac.c
+@@ -110,6 +110,9 @@ static void *a2dp_aac_enc_thread(struct ba_transport_thread *th) {
+ 	case AAC_OBJECT_TYPE_MPEG4_AAC_SCA:
+ 		aot = AOT_AAC_SCAL;
+ 		break;
++	default:
++		debug("***other object_type %d", configuration->object_type);
++		aot = AOT_AAC_LC;
+ 	}
+ 
+ 	if ((err = aacEncoder_SetParam(handle, AACENC_AOT, aot)) != AACENC_OK) {
+diff --git a/src/a2dp.c b/src/a2dp.c
+index 62a1726..9719f88 100644
+--- a/src/a2dp.c
++++ b/src/a2dp.c
+@@ -868,7 +868,11 @@ uint32_t a2dp_check_configuration(
+ #if ENABLE_AAC
+ 	case A2DP_CODEC_MPEG24: {
+ 
+-		const a2dp_aac_t *cap = configuration;
++		a2dp_aac_t *cap = configuration;
++		if(cap->object_type == (AAC_OBJECT_TYPE_MPEG4_AAC_LC | AAC_OBJECT_TYPE_MPEG2_AAC_LC)) {
++			cap->object_type = AAC_OBJECT_TYPE_MPEG4_AAC_LC;
++			debug("** special treatment");
++		}
+ 		cap_chm = cap->channels;
+ 		cap_freq = AAC_GET_FREQUENCY(*cap);
+ 
+-- 
+2.29.0
+

@@ -1,0 +1,28 @@
+From a48a5bf88e7f609994e2edb485a84fe077ec6cbe Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Fri, 19 Aug 2022 15:18:26 +0800
+Subject: [PATCH] fix frames value overflow.
+
+---
+ src/shared/rt.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/shared/rt.c b/src/shared/rt.c
+index c21b60d..d833a2e 100644
+--- a/src/shared/rt.c
++++ b/src/shared/rt.c
+@@ -51,6 +51,11 @@ int asrsync_sync(struct asrsync *asrs, unsigned int frames) {
+ 		rv = 1;
+ 	}
+ 
++	if (asrs->frames > 20 * rate) {
++		asrs->frames -= 10 * rate;
++		asrs->ts0.tv_sec += 10;
++	}
++
+ 	gettimestamp(&asrs->ts);
+ 	return rv;
+ }
+-- 
+2.29.0
+
