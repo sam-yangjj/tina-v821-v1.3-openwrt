@@ -1,0 +1,12 @@
+*.o
+.openwrt_targets
+openwrt/.config
+openwrt/build_log/
+openwrt/package/subpackage
+openwrt/scripts/config/conf
+openwrt/scripts/config/mconf
+openwrt/scripts/config/mconf-cfg
+openwrt/scripts/config/mconf_check
+openwrt/staging_dir
+openwrt/target/linux
+openwrt/tmp
