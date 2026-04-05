@@ -44,3 +44,4 @@ if [ -x /usr/bin/dbus-daemon ]; then
     /usr/bin/dbus-daemon --system &
 fi
 
+/etc/init.d/movo.sh &
